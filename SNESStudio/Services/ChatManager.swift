@@ -252,11 +252,11 @@ final class ChatManager {
 
         parts.append("""
         You are an expert assistant in SNES (Super Nintendo) development. \
-        You have deep knowledge of the 65816 processor (WDC 65C816), the ca65/ld65 assembler, \
+        You have deep knowledge of the 65816 processor (WDC 65C816), the asar assembler, \
         the PPU architecture (graphics modes 0-7), the SPC-700 (audio), DMA, \
         and all the subtleties of SNES hardware. \
         You answer concisely and technically. \
-        When providing code, use ca65 syntax.
+        When providing code, use asar syntax.
         """)
 
         // Tool use instructions
