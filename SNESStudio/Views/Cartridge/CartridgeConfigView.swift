@@ -167,6 +167,31 @@ struct CartridgeConfigView: View {
                 .padding(4)
             }
 
+            // Build
+            GroupBox("Build") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Text("Entry file")
+                            .font(.system(size: 12))
+                            .foregroundStyle(SNESTheme.textSecondary)
+                            .frame(width: 80, alignment: .leading)
+                        Picker("", selection: mainSourceFileBinding) {
+                            Text("Auto (\(autoMainSourceFileLabel))").tag(String?.none)
+                            ForEach(state.sourceFiles, id: \.self) { file in
+                                Text(file).tag(String?.some(file))
+                            }
+                        }
+                        .labelsHidden()
+                        .frame(width: 200)
+                    }
+
+                    Text("The file passed to the assembler as the build entry point. Other files are typically pulled in via incsrc/include.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SNESTheme.textDisabled)
+                }
+                .padding(4)
+            }
+
             // Enhancement chip
             GroupBox("Enhancement Chip") {
                 VStack(alignment: .leading, spacing: 8) {
@@ -217,6 +242,23 @@ struct CartridgeConfigView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Build Settings
+
+    private var autoMainSourceFileLabel: String {
+        state.sourceFiles.sorted().first ?? "none"
+    }
+
+    private var mainSourceFileBinding: Binding<String?> {
+        Binding(
+            get: { state.projectManager.currentProject?.buildSettings.mainSourceFile },
+            set: { newValue in
+                guard var settings = state.projectManager.currentProject?.buildSettings else { return }
+                settings.mainSourceFile = newValue
+                try? state.projectManager.updateBuildSettings(settings)
+            }
+        )
     }
 
     // MARK: - Apply

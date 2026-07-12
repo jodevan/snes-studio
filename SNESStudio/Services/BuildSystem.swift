@@ -118,9 +118,12 @@ final class BuildSystem {
         console.appendConsole("Build directory: \(buildDir.path)", type: .info)
         console.appendConsole("Output file: \(outputFile.path)", type: .info)
 
-        // asar assembles all files in one pass, typically starting from a main file
-        // Find the main source file (usually the first one or one named "main.asm")
-        guard let mainSourceFile = project.sourceFiles.first else {
+        // asar assembles all files in one pass, starting from the configured entry
+        // file. Falls back to the alphabetically first source file if unset or if
+        // the configured file no longer exists in the project.
+        let configuredMainFile = project.buildSettings.mainSourceFile
+            .flatMap { project.sourceFiles.contains($0) ? $0 : nil }
+        guard let mainSourceFile = configuredMainFile ?? project.sourceFiles.first else {
             console.appendConsole("No source files found in project", type: .error)
             isBuilding = false
             return

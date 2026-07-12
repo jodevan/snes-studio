@@ -8,6 +8,9 @@ struct BuildSettings: Codable, Equatable {
     var generateDebugSymbols: Bool = true
     var generateMapFile: Bool = false
     var fixChecksum: Bool = true
+    /// Source file passed to the assembler as the build entry point.
+    /// When nil, falls back to the alphabetically first source file.
+    var mainSourceFile: String?
 }
 
 // MARK: - SNES Project

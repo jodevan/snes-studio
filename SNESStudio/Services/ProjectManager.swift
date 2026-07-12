@@ -141,6 +141,17 @@ final class ProjectManager {
         try saveProject()
     }
 
+    // MARK: - Update Build Settings
+
+    func updateBuildSettings(_ settings: BuildSettings) throws {
+        guard var project = currentProject else { return }
+        project.buildSettings = settings
+        project.modifiedDate = Date()
+        currentProject = project
+
+        try saveProject()
+    }
+
     // MARK: - Recents
 
     private func loadRecents() {
