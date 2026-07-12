@@ -23,7 +23,7 @@ targets:
       - path: SNESStudio/Resources/Assets.xcassets
         type: resource
       - path: SNESStudio/Resources/CodeMirror
-        type: resource
+        type: folder
       - path: SNESStudio/Resources/Localizable.xcstrings
         type: resource
     settings:

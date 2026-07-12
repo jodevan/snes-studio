@@ -68,20 +68,20 @@
 		9AD3D5B4A443E02EC6632353 /* ZoneListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B30870AA0E09B9D9CBB9E34 /* ZoneListView.swift */; };
 		9C8D2CAF3352A3C5C2DBBD4E /* SNESRegister.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FD60BBB60F81A81F96DD85C /* SNESRegister.swift */; };
 		A6A286E0EC51E4848974F719 /* CodeEditorCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30DE8103DFB589FBE829E66 /* CodeEditorCoordinator.swift */; };
-		A9F55906F716F90A6D88A5D8 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 84D368C5E776C594CD0453A4 /* index.html */; };
 		AB14E0E97160085B2BF10A78 /* AnimationTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4FE9E02D358993D61AAB5579 /* AnimationTimelineView.swift */; };
 		AC06C335208BFBC3C9114ECD /* ChatManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8CE0D463493276B04953DCDC /* ChatManager.swift */; };
 		B0BEC335AB5413AEAF4DCA1B /* TilemapEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 51A3F86C4C7DC955CBE78A3E /* TilemapEditorView.swift */; };
+		B0D7A8E9C4D8367E35893EBE /* WorldOverviewView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A480C3BFBB78C2168A2188CE /* WorldOverviewView.swift */; };
 		B238D082B6C8F8F975B23082 /* SidebarItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8586821722B7CD1E1010209F /* SidebarItem.swift */; };
 		B5F19A5E38A439D088B8A440 /* SpriteSheetImportView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A2DACA37A34737A7F382BB7 /* SpriteSheetImportView.swift */; };
 		BE20EF2CB88FDA092738420E /* SNESTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24A99C221ADFBEC48F54F913 /* SNESTheme.swift */; };
 		BEB4F839894BB594EE79FE8D /* WorldGridCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10CB586E6368266D34FF96E /* WorldGridCanvas.swift */; };
 		BF1F2F8742A5CE7D39BBD03C /* LevelCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE3AA425CE133986BE712695 /* LevelCanvas.swift */; };
 		C2206D4AD8EABB3A946FCFC3 /* SpriteSheetImporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = A753BB3B34BBEFD1045F314E /* SpriteSheetImporter.swift */; };
-		C31D55A46001650EA5FECC3D /* editor.js in Resources */ = {isa = PBXBuildFile; fileRef = C7CB2C4B7A2D87FD2B389479 /* editor.js */; };
 		C480BAE8000CEE9F1E6E96DD /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = CE4422F118D90D55D44CB9A9 /* Localizable.xcstrings */; };
 		C6829EF5496ECE399C8A0342 /* BuildSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50E643DC38CACEACB3B34D03 /* BuildSystem.swift */; };
 		C78F43B60CC24CC674377705 /* ROMAnalyzerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBE27D7D40BA028F391882DC /* ROMAnalyzerView.swift */; };
+		C8648172788ADF0D5B78C39C /* CodeMirror in Resources */ = {isa = PBXBuildFile; fileRef = F3177931175656BC9F622489 /* CodeMirror */; };
 		CA76F4492B7A287693C70B57 /* SNESProject.swift in Sources */ = {isa = PBXBuildFile; fileRef = A66F38C2C935BAB27E92062C /* SNESProject.swift */; };
 		CAF47D87D272F20E9C45A64B /* ScreenPropertiesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC085AF475FFF6CB419070EE /* ScreenPropertiesView.swift */; };
 		CC0A5B1B7847642C89918B5F /* PaletteEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F97FBDD7D248F183258D2244 /* PaletteEditorView.swift */; };
@@ -95,7 +95,6 @@
 		DEFF3CCFC54CD84E3001DFE0 /* ControllerEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E68120749C9EE54A282C058D /* ControllerEditorView.swift */; };
 		E1E0E02BBFA43C0FB08C63B7 /* LayerViewerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9119F082E4AC00B1C5C9192E /* LayerViewerView.swift */; };
 		E234844BAAE12601F5D501E8 /* TileEditorCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 098ED858B6177F4917582E7B /* TileEditorCanvas.swift */; };
-		E3340AB2771D0EEBEDD6488C /* theme.css in Resources */ = {isa = PBXBuildFile; fileRef = F9F37992E7A6BF981712BD09 /* theme.css */; };
 		E472FCA4685D66956C863833 /* PalettePresets.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9E318A21D3C820E02F053D0 /* PalettePresets.swift */; };
 		E69250CD2DABD3E90B874BAD /* VRAMBudgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8FC31217EBFAF84E24DAA0B /* VRAMBudgetView.swift */; };
 		EA7051CCAF0107EA4F156976 /* TransitionEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10877F1A1040C907415F9B74 /* TransitionEditorView.swift */; };
@@ -161,7 +160,6 @@
 		7D5CED57F9989985FA54732B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		81BEF033B4B0ECDB0E63CBD9 /* ScreenListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenListView.swift; sourceTree = "<group>"; };
 		82B5207EADC3BC737DD7F041 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
-		84D368C5E776C594CD0453A4 /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
 		8586821722B7CD1E1010209F /* SidebarItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SidebarItem.swift; sourceTree = "<group>"; };
 		860C0430C4B595C026E0C140 /* TilemapPropertiesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TilemapPropertiesView.swift; sourceTree = "<group>"; };
 		8CE0D463493276B04953DCDC /* ChatManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatManager.swift; sourceTree = "<group>"; };
@@ -171,6 +169,7 @@
 		9F0C6FF036D3987AA0AC79DA /* LinkerConfigGenerator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkerConfigGenerator.swift; sourceTree = "<group>"; };
 		9F54077FD95E40F44CBCDA7C /* LevelLayerPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelLayerPanel.swift; sourceTree = "<group>"; };
 		A4367320E42DAEC108223450 /* SpriteDecomposer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteDecomposer.swift; sourceTree = "<group>"; };
+		A480C3BFBB78C2168A2188CE /* WorldOverviewView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldOverviewView.swift; sourceTree = "<group>"; };
 		A5171203538FEF4F47E46B55 /* EditorTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EditorTab.swift; sourceTree = "<group>"; };
 		A66F38C2C935BAB27E92062C /* SNESProject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SNESProject.swift; sourceTree = "<group>"; };
 		A753BB3B34BBEFD1045F314E /* SpriteSheetImporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteSheetImporter.swift; sourceTree = "<group>"; };
@@ -186,7 +185,6 @@
 		BE04E63065FE84EBC7408A5B /* ProjectTemplate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectTemplate.swift; sourceTree = "<group>"; };
 		BE3AA425CE133986BE712695 /* LevelCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelCanvas.swift; sourceTree = "<group>"; };
 		C30DE8103DFB589FBE829E66 /* CodeEditorCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodeEditorCoordinator.swift; sourceTree = "<group>"; };
-		C7CB2C4B7A2D87FD2B389479 /* editor.js */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.javascript; path = editor.js; sourceTree = "<group>"; };
 		C9DE7E18E6DBAED848307A54 /* SpriteDrawingCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteDrawingCanvas.swift; sourceTree = "<group>"; };
 		CA5C00ABC65EE1B0A3D9B92F /* SNESStudio.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = SNESStudio.entitlements; sourceTree = "<group>"; };
 		CBC5A52F7638B397111606E2 /* SNESSprite.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SNESSprite.swift; sourceTree = "<group>"; };
@@ -203,13 +201,13 @@
 		E68120749C9EE54A282C058D /* ControllerEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerEditorView.swift; sourceTree = "<group>"; };
 		EB7371D13784CC0649734F82 /* PyramidLevel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PyramidLevel.swift; sourceTree = "<group>"; };
 		EEC0D435B3FE6ED76591A7F8 /* AnthropicService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnthropicService.swift; sourceTree = "<group>"; };
+		F3177931175656BC9F622489 /* CodeMirror */ = {isa = PBXFileReference; lastKnownFileType = folder; name = CodeMirror; path = SNESStudio/Resources/CodeMirror; sourceTree = SOURCE_ROOT; };
 		F58447335AAD7CA70747E8C7 /* LevelEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelEditorView.swift; sourceTree = "<group>"; };
 		F70B000299245CF1D13151D5 /* ROMTileExplorerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ROMTileExplorerView.swift; sourceTree = "<group>"; };
 		F715429BFEE2CD540A22DB8E /* ToolbarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ToolbarView.swift; sourceTree = "<group>"; };
 		F8E6C1BF62755018EC5B6CF2 /* VRAMViewerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VRAMViewerView.swift; sourceTree = "<group>"; };
 		F97FBDD7D248F183258D2244 /* PaletteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaletteEditorView.swift; sourceTree = "<group>"; };
 		F9E318A21D3C820E02F053D0 /* PalettePresets.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PalettePresets.swift; sourceTree = "<group>"; };
-		F9F37992E7A6BF981712BD09 /* theme.css */ = {isa = PBXFileReference; lastKnownFileType = text.css; path = theme.css; sourceTree = "<group>"; };
 		FAFE2CCD31B215FCE279EF39 /* SNESColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SNESColor.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -357,16 +355,6 @@
 			path = App;
 			sourceTree = "<group>";
 		};
-		778F7F664E20BEA875AD3D6F /* CodeMirror */ = {
-			isa = PBXGroup;
-			children = (
-				C7CB2C4B7A2D87FD2B389479 /* editor.js */,
-				84D368C5E776C594CD0453A4 /* index.html */,
-				F9F37992E7A6BF981712BD09 /* theme.css */,
-			);
-			path = CodeMirror;
-			sourceTree = "<group>";
-		};
 		898C3953D1BD01ECBA572017 /* SpriteDrawing */ = {
 			isa = PBXGroup;
 			children = (
@@ -476,6 +464,7 @@
 				A4367320E42DAEC108223450 /* SpriteDecomposer.swift */,
 				A753BB3B34BBEFD1045F314E /* SpriteSheetImporter.swift */,
 				0015E15F9BCE997167E24FCB /* VRAMBudgetCalculator.swift */,
+				A480C3BFBB78C2168A2188CE /* WorldOverviewView.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -523,8 +512,8 @@
 			isa = PBXGroup;
 			children = (
 				7D5CED57F9989985FA54732B /* Assets.xcassets */,
+				F3177931175656BC9F622489 /* CodeMirror */,
 				CE4422F118D90D55D44CB9A9 /* Localizable.xcstrings */,
-				778F7F664E20BEA875AD3D6F /* CodeMirror */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -591,7 +580,6 @@
 				};
 			};
 			buildConfigurationList = 96D7FB3CA807B0EBF692B5AF /* Build configuration list for PBXProject "SNESStudio" */;
-			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -601,6 +589,7 @@
 			mainGroup = 62C5503009B8B326FB5A6AC8;
 			minimizedProjectReferenceProxies = 1;
 			preferredProjectObjectVersion = 77;
+			productRefGroup = DB0865634335A2EBFF523FBC /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -615,10 +604,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				FB680B086F9D7E14EEB8670C /* Assets.xcassets in Resources */,
+				C8648172788ADF0D5B78C39C /* CodeMirror in Resources */,
 				C480BAE8000CEE9F1E6E96DD /* Localizable.xcstrings in Resources */,
-				C31D55A46001650EA5FECC3D /* editor.js in Resources */,
-				A9F55906F716F90A6D88A5D8 /* index.html in Resources */,
-				E3340AB2771D0EEBEDD6488C /* theme.css in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -722,6 +709,7 @@
 				331160642B7CFE1E73E4DCE6 /* WorldData.swift in Sources */,
 				771225545154ACE7B606299C /* WorldEditorView.swift in Sources */,
 				BEB4F839894BB594EE79FE8D /* WorldGridCanvas.swift in Sources */,
+				B0D7A8E9C4D8367E35893EBE /* WorldOverviewView.swift in Sources */,
 				9AD3D5B4A443E02EC6632353 /* ZoneListView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
