@@ -6,6 +6,7 @@ final class CodeEditorCoordinator: NSObject, WKScriptMessageHandler, WKNavigatio
     let fileID: String
     private var filePath: URL?
     private var isLoaded = false
+    private var hasLoadedContent = false
     private weak var webViewRef: WKWebView?
     private var cursorSubscription: AnyCancellable?
     private var codeFileSubscription: AnyCancellable?
@@ -46,7 +47,10 @@ final class CodeEditorCoordinator: NSObject, WKScriptMessageHandler, WKNavigatio
         webViewRef = webView
         guard let path = state.fileURL(for: fileID) else { return }
         filePath = path
-        guard isLoaded else { return } // Wait until editor is ready
+        // updateNSView runs on every SwiftUI re-render of the enclosing view (e.g. a
+        // cursor move), not just when the file actually needs (re)loading. Only load
+        // once here; editorReady and .codeFileDidChange trigger reloads explicitly.
+        guard isLoaded, !hasLoadedContent else { return }
 
         loadFileContent(webView: webView)
     }
@@ -54,6 +58,7 @@ final class CodeEditorCoordinator: NSObject, WKScriptMessageHandler, WKNavigatio
     private func loadFileContent(webView: WKWebView) {
         guard let path = filePath else { return }
         guard let content = try? String(contentsOf: path, encoding: .utf8) else { return }
+        hasLoadedContent = true
         let escaped = content
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "`", with: "\\`")
