@@ -149,7 +149,7 @@
 		67EAAC9748D244DDAF299DFE /* SpriteEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteEditorView.swift; sourceTree = "<group>"; };
 		6B0F172D3FDC242CE8F55007 /* WorldData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorldData.swift; sourceTree = "<group>"; };
 		6C5B7927B27E4DEEBE4485B4 /* SNESControllerShape.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SNESControllerShape.swift; sourceTree = "<group>"; };
-		72ACD51FE79B2C05D47F71EF /* SNESStudio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SNESStudio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		72ACD51FE79B2C05D47F71EF /* SNES Studio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "SNES Studio.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7338D10BB1D1399ACDA3622F /* SpriteDrawingNSView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteDrawingNSView.swift; sourceTree = "<group>"; };
 		7553D5368DD8AAE8567523BD /* SpriteCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpriteCanvas.swift; sourceTree = "<group>"; };
 		7663F0B936E3EAF1135F53BC /* BGMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGMode.swift; sourceTree = "<group>"; };

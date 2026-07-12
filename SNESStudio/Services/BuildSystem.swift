@@ -110,6 +110,11 @@ final class BuildSystem {
         // Create build directory
         try? FileManager.default.createDirectory(at: buildDir, withIntermediateDirectories: true)
 
+        // asar treats an existing output file as a ROM to patch and validates its
+        // current header before writing, so a stale file from a failed build would
+        // keep failing every subsequent build even after the source is fixed.
+        try? FileManager.default.removeItem(at: outputFile)
+
         console.appendConsole("Build directory: \(buildDir.path)", type: .info)
         console.appendConsole("Output file: \(outputFile.path)", type: .info)
 
@@ -322,7 +327,10 @@ final class BuildSystem {
                     try process.run()
                     process.waitUntilExit()
                     let data = pipe.fileHandleForReading.readDataToEndOfFile()
-                    let output = String(data: data, encoding: .utf8) ?? ""
+                    // Tool output can embed raw binary (e.g. asar echoing back an invalid
+                    // ROM title from the cartridge header), which fails strict UTF-8
+                    // decoding. Decode lossily so diagnostics are never silently dropped.
+                    let output = String(decoding: data, as: UTF8.self)
                     continuation.resume(returning: (output, process.terminationStatus))
                 } catch {
                     continuation.resume(returning: (error.localizedDescription, -1))
