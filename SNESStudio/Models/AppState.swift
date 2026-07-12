@@ -19,6 +19,8 @@ final class AppState {
     // MARK: - Panel visibility
     var isRightPanelVisible: Bool = false
     var isConsoleVisible: Bool = true
+    var isRecentProjectsVisible: Bool = true
+    var isRecentProjectsOverlayVisible: Bool = false
 
     // MARK: - Panel sizes
     var rightPanelWidth: CGFloat = SNESTheme.rightPanelDefaultWidth
@@ -106,6 +108,19 @@ final class AppState {
     func toggleConsole() {
         withAnimation(.easeInOut(duration: 0.2)) {
             isConsoleVisible.toggle()
+        }
+    }
+
+    /// On the Welcome screen this shows/hides the docked sidebar; once a project is
+    /// open (and that sidebar isn't part of the view tree) it toggles a floating
+    /// overlay instead, so the same menu command/shortcut works in both contexts.
+    func toggleRecentProjects() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            if projectManager.currentProject != nil {
+                isRecentProjectsOverlayVisible.toggle()
+            } else {
+                isRecentProjectsVisible.toggle()
+            }
         }
     }
 
@@ -208,6 +223,7 @@ final class AppState {
         guard let project = projectManager.currentProject else { return }
         sourceFiles = project.sourceFiles
         tabManager.closeAllTabs()
+        isRecentProjectsOverlayVisible = false
 
         // Set default logique sub-tab to first source file
         if let first = sourceFiles.first {

@@ -6,9 +6,9 @@ struct WelcomeView: View {
     var body: some View {
         HStack(spacing: 0) {
             // Left: Recent projects (full height)
-            recentProjectsSidebar
-
-            SNESTheme.border.frame(width: 1)
+            if state.isRecentProjectsVisible {
+                RecentProjectsPanel(state: state)
+            }
 
             // Right: Welcome content
             VStack(spacing: 0) {
@@ -84,48 +84,68 @@ struct WelcomeView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(SNESTheme.bgEditor)
     }
+}
 
-    // MARK: - Recent projects sidebar
+// MARK: - Recent Projects Panel (shared, identical look on the Welcome screen and the IDE overlay)
 
-    private var recentProjectsSidebar: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            Text("RECENT PROJECTS")
-                .font(.system(size: 10, weight: .semibold))
-                .tracking(0.5)
-                .foregroundStyle(SNESTheme.textDisabled)
-                .padding(.horizontal, 16)
-                .padding(.top, 16)
-                .padding(.bottom, 10)
+struct RecentProjectsPanel: View {
+    @Bindable var state: AppState
 
-            if state.projectManager.recentProjects.isEmpty {
-                Text("No recent projects")
-                    .font(.system(size: 12))
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header
+                Text("RECENT PROJECTS")
+                    .font(.system(size: 10, weight: .semibold))
+                    .tracking(0.5)
                     .foregroundStyle(SNESTheme.textDisabled)
                     .padding(.horizontal, 16)
-                    .padding(.top, 8)
-            } else {
-                ScrollView {
-                    VStack(spacing: 2) {
-                        ForEach(state.projectManager.recentProjects, id: \.self) { url in
-                            RecentProjectRow(url: url) {
-                                if FileManager.default.fileExists(atPath: url.path) {
-                                    state.projectManager.openProject(at: url)
-                                    state.loadProject()
-                                } else {
-                                    state.appendConsole("Project not found: \(url.lastPathComponent)", type: .warning)
-                                }
+                    .padding(.top, 16)
+                    .padding(.bottom, 10)
+
+                RecentProjectsList(state: state)
+
+                Spacer()
+            }
+            .frame(width: 240)
+            .frame(maxHeight: .infinity)
+            .background(SNESTheme.bgPanel)
+
+            SNESTheme.border.frame(width: 1)
+        }
+    }
+}
+
+// MARK: - Recent Projects List
+
+struct RecentProjectsList: View {
+    @Bindable var state: AppState
+
+    var body: some View {
+        if state.projectManager.recentProjects.isEmpty {
+            Text("No recent projects")
+                .font(.system(size: 12))
+                .foregroundStyle(SNESTheme.textDisabled)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+        } else {
+            ScrollView {
+                VStack(spacing: 2) {
+                    ForEach(state.projectManager.recentProjects, id: \.self) { url in
+                        RecentProjectRow(url: url) {
+                            if FileManager.default.fileExists(atPath: url.path) {
+                                state.projectManager.openProject(at: url)
+                                // Dismisses the IDE overlay too; see AppState.loadProject().
+                                state.loadProject()
+                            } else {
+                                state.appendConsole("Project not found: \(url.lastPathComponent)", type: .warning)
                             }
                         }
                     }
-                    .padding(.horizontal, 8)
                 }
+                .padding(.horizontal, 8)
             }
-
-            Spacer()
         }
-        .frame(width: 240)
-        .background(SNESTheme.bgPanel)
     }
 }
 

@@ -64,6 +64,11 @@ struct SNESStudioApp: App {
                 }
                 .keyboardShortcut("j", modifiers: [.command])
 
+                Button("Toggle Recent Projects") {
+                    NotificationCenter.default.post(name: .toggleRecentProjects, object: nil)
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+
                 Divider()
             }
 
@@ -164,6 +169,7 @@ extension Notification.Name {
     static let setLevel = Notification.Name("SNESStudio.setLevel")
     static let toggleRightPanel = Notification.Name("SNESStudio.toggleRightPanel")
     static let toggleConsole = Notification.Name("SNESStudio.toggleConsole")
+    static let toggleRecentProjects = Notification.Name("SNESStudio.toggleRecentProjects")
     static let buildProject = Notification.Name("SNESStudio.build")
     static let runProject = Notification.Name("SNESStudio.run")
     static let hotReload = Notification.Name("SNESStudio.hotReload")

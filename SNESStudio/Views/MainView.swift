@@ -77,6 +77,16 @@ struct MainView: View {
                         .frame(width: state.rightPanelWidth)
                 }
             }
+            .overlay(alignment: .topLeading) {
+                if state.isRecentProjectsOverlayVisible {
+                    ZStack(alignment: .topLeading) {
+                        Color.black.opacity(0.001)
+                            .onTapGesture { state.isRecentProjectsOverlayVisible = false }
+
+                        RecentProjectsPanel(state: state)
+                    }
+                }
+            }
         }
     }
 
@@ -148,6 +158,9 @@ private struct KeyboardShortcutHandlers: ViewModifier {
             }
             .onReceive(NotificationCenter.default.publisher(for: .toggleConsole)) { _ in
                 state.toggleConsole()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleRecentProjects)) { _ in
+                state.toggleRecentProjects()
             }
             .onReceive(NotificationCenter.default.publisher(for: .buildProject)) { _ in
                 Task { await state.buildProject() }
