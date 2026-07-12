@@ -1,6 +1,6 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView, keymap, lineNumbers, highlightActiveLine, highlightActiveLineGutter } from "@codemirror/view";
-import { defaultKeymap, history, historyKeymap } from "@codemirror/commands";
+import { defaultKeymap, history, historyKeymap, insertTab, indentLess } from "@codemirror/commands";
 import { searchKeymap, highlightSelectionMatches } from "@codemirror/search";
 import { bracketMatching, foldGutter, foldKeymap } from "@codemirror/language";
 import { closeBrackets, closeBracketsKeymap } from "@codemirror/autocomplete";
@@ -33,6 +33,7 @@ function createEditor(parent: HTMLElement, content: string = "") {
         ...searchKeymap,
         ...historyKeymap,
         ...foldKeymap,
+        { key: "Tab", run: insertTab, shift: indentLess },
       ]),
       EditorView.updateListener.of((update) => {
         if (update.docChanged) {
