@@ -11,7 +11,7 @@ struct ToolbarView: View {
                     Task { await state.buildProject() }
                 }
                 ToolbarButton(icon: "play.fill", label: "Run", shortcut: "R") {
-                    Task { await state.buildProject() }
+                    Task { await state.runProject() }
                 }
                 ToolbarButton(icon: "arrow.clockwise", label: "Hot Reload") {
                     state.appendConsole("Hot Reload...", type: .command)

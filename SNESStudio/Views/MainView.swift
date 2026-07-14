@@ -166,7 +166,7 @@ private struct KeyboardShortcutHandlers: ViewModifier {
                 Task { await state.buildProject() }
             }
             .onReceive(NotificationCenter.default.publisher(for: .runProject)) { _ in
-                Task { await state.buildProject() }
+                Task { await state.runProject() }
             }
             .onReceive(NotificationCenter.default.publisher(for: .hotReload)) { _ in
                 state.appendConsole("Hot Reload...", type: .command)

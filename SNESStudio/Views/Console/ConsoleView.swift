@@ -27,7 +27,7 @@ struct ConsoleView: View {
                 .buttonStyle(.plain)
 
                 Button {
-                    Task { await state.buildProject() }
+                    Task { await state.runProject() }
                 } label: {
                     Text("Build & Run")
                         .font(.system(size: 10, weight: .medium))

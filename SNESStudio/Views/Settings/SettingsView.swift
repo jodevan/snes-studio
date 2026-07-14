@@ -1,4 +1,5 @@
 import SwiftUI
+import AppKit
 
 struct SettingsView: View {
     @State private var apiKey: String = ""
@@ -6,6 +7,8 @@ struct SettingsView: View {
     @State private var saved: Bool = false
     @State private var selectedLanguage: AppLanguage = .system
     @State private var needsRestart: Bool = false
+    @State private var emulatorPath: String = ""
+    @State private var emulatorArguments: String = ""
 
     private let keychainKey = "anthropic_api_key"
 
@@ -96,12 +99,93 @@ struct SettingsView: View {
                 }
                 .padding(.vertical, 4)
             }
+
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Emulator")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SNESTheme.textPrimary)
+
+                    Text("App used to launch the built ROM with Build & Run")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SNESTheme.textSecondary)
+
+                    HStack(spacing: 8) {
+                        TextField("/Applications/Snes9x.app", text: $emulatorPath)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                            .onChange(of: emulatorPath) { _, _ in
+                                saveEmulatorPath()
+                            }
+
+                        Button("Choose…") {
+                            chooseEmulator()
+                        }
+                    }
+
+                    Text("Launch Arguments")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(SNESTheme.textPrimary)
+                        .padding(.top, 4)
+
+                    Text("Use {rom} for the built ROM's path. Leave blank to just pass the ROM path as the only argument.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SNESTheme.textSecondary)
+
+                    TextField("-loadrom {rom}", text: $emulatorArguments)
+                        .textFieldStyle(.roundedBorder)
+                        .font(.system(size: 12, design: .monospaced))
+                        .onChange(of: emulatorArguments) { _, _ in
+                            saveEmulatorArguments()
+                        }
+                }
+                .padding(.vertical, 4)
+            }
         }
         .formStyle(.grouped)
-        .frame(width: 480, height: 340)
+        .frame(width: 480, height: 480)
         .onAppear {
             apiKey = KeychainHelper.read(key: keychainKey) ?? ""
             selectedLanguage = AppLanguage.current
+            emulatorPath = UserDefaults.standard.string(forKey: Self.emulatorPathKey) ?? ""
+            emulatorArguments = UserDefaults.standard.string(forKey: Self.emulatorArgumentsKey) ?? ""
+        }
+    }
+
+    static let emulatorPathKey = "emulatorPath"
+    static let emulatorArgumentsKey = "emulatorArguments"
+
+    private func chooseEmulator() {
+        let panel = NSOpenPanel()
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        if panel.runModal() == .OK, let url = panel.url {
+            emulatorPath = url.path
+            saveEmulatorPath()
+        }
+    }
+
+    private func saveEmulatorPath() {
+        var trimmed = emulatorPath.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.hasPrefix("\""), trimmed.hasSuffix("\""), trimmed.count >= 2 {
+            trimmed = String(trimmed.dropFirst().dropLast())
+        }
+        trimmed = NSString(string: trimmed).expandingTildeInPath
+        if trimmed.isEmpty {
+            UserDefaults.standard.removeObject(forKey: Self.emulatorPathKey)
+        } else {
+            UserDefaults.standard.set(trimmed, forKey: Self.emulatorPathKey)
+        }
+    }
+
+    private func saveEmulatorArguments() {
+        let trimmed = emulatorArguments.trimmingCharacters(in: .whitespaces)
+        if trimmed.isEmpty {
+            UserDefaults.standard.removeObject(forKey: Self.emulatorArgumentsKey)
+        } else {
+            UserDefaults.standard.set(trimmed, forKey: Self.emulatorArgumentsKey)
         }
     }
 }

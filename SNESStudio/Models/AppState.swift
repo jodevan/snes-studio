@@ -299,4 +299,67 @@ final class AppState {
         }
         await buildSystem.build(project: project, console: self)
     }
+
+    func runProject() async {
+        await buildProject()
+        guard let result = buildSystem.lastResult, result.success, let romURL = result.romURL else {
+            return
+        }
+        launchEmulator(romURL: romURL)
+    }
+
+    private func launchEmulator(romURL: URL) {
+        guard let path = UserDefaults.standard.string(forKey: SettingsView.emulatorPathKey), !path.isEmpty else {
+            appendConsole(String(localized: "No emulator configured — set one in Settings"), type: .warning)
+            return
+        }
+        let configuredURL = URL(fileURLWithPath: path)
+        guard FileManager.default.fileExists(atPath: configuredURL.path) else {
+            appendConsole(String(localized: "Emulator not found at \(path) — check Settings"), type: .error)
+            return
+        }
+
+        // A .app bundle isn't directly executable — resolve it to the Mach-O binary
+        // inside Contents/MacOS/. If the configured path is already that binary
+        // (or any other command-line tool), use it as-is.
+        let executableURL = configuredURL.pathExtension == "app"
+            ? (Bundle(url: configuredURL)?.executableURL ?? configuredURL)
+            : configuredURL
+
+        let template = UserDefaults.standard.string(forKey: SettingsView.emulatorArgumentsKey) ?? "{rom}"
+        let arguments = parseArguments(template.isEmpty ? "{rom}" : template)
+            .map { $0.replacingOccurrences(of: "{rom}", with: romURL.path) }
+
+        appendConsole(String(localized: "Launching \(executableURL.lastPathComponent) \(arguments.joined(separator: " "))…"), type: .command)
+
+        let process = Process()
+        process.executableURL = executableURL
+        process.arguments = arguments
+        do {
+            try process.run()
+        } catch {
+            appendConsole(String(localized: "Failed to launch emulator: \(error.localizedDescription)"), type: .error)
+        }
+    }
+
+    /// Splits a launch-argument template into tokens, honoring single/double quotes
+    /// so paths containing spaces can be quoted.
+    private func parseArguments(_ raw: String) -> [String] {
+        var args: [String] = []
+        var current = ""
+        var quoteChar: Character?
+        for char in raw {
+            if let q = quoteChar {
+                if char == q { quoteChar = nil } else { current.append(char) }
+            } else if char == "\"" || char == "'" {
+                quoteChar = char
+            } else if char.isWhitespace {
+                if !current.isEmpty { args.append(current); current = "" }
+            } else {
+                current.append(char)
+            }
+        }
+        if !current.isEmpty { args.append(current) }
+        return args
+    }
 }
