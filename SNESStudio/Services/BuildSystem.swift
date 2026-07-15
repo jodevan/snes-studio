@@ -24,42 +24,6 @@ final class BuildSystem {
     var isBuilding = false
     var lastResult: BuildResult?
 
-    // MARK: - Tool resolution
-
-    private func findTool(_ name: String) -> String? {
-        // First, try using 'which' with a full shell environment
-        // This sources the user's shell profile to get the complete PATH
-        let whichCommand = """
-        if [ -f ~/.zshrc ]; then source ~/.zshrc; fi
-        if [ -f ~/.bash_profile ]; then source ~/.bash_profile; fi
-        if [ -f ~/.bashrc ]; then source ~/.bashrc; fi
-        which \(name)
-        """
-        
-        let result = shell(whichCommand)
-        let trimmed = result.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty && FileManager.default.fileExists(atPath: trimmed) {
-            return trimmed
-        }
-        
-        // Fallback: Check common installation paths
-        let paths = [
-            "/opt/homebrew/bin/\(name)",
-            "/usr/local/bin/\(name)",
-            "/usr/bin/\(name)",
-            "~/bin/\(name)",
-            "~/.local/bin/\(name)",
-        ]
-        for path in paths {
-            let expandedPath = NSString(string: path).expandingTildeInPath
-            if FileManager.default.fileExists(atPath: expandedPath) {
-                return expandedPath
-            }
-        }
-        
-        return nil
-    }
-
     // MARK: - Build
 
     @MainActor
@@ -75,21 +39,12 @@ final class BuildSystem {
             console.appendConsole("No build command configured — set one in the Cartridge tab", type: .error)
             return
         }
-        var commandTokens = parseCommandTemplate(template)
-        let toolName = commandTokens.removeFirst()
-
-        guard let toolPath = findTool(toolName) else {
-            console.appendConsole("\(toolName) not found. Please install it and ensure it's in your PATH", type: .error)
-            console.appendConsole("Run 'which \(toolName)' in Terminal to find its location", type: .info)
-            return
-        }
 
         isBuilding = true
         let startTime = Date()
         var errors: [BuildError] = []
 
         console.appendConsole("=== Build \(project.name) ===", type: .info)
-        console.appendConsole("Using \(toolName) at: \(toolPath)", type: .info)
 
         let srcDir = projectPath.appendingPathComponent("src")
         let buildDir = projectPath.appendingPathComponent("build")
@@ -128,15 +83,17 @@ final class BuildSystem {
         console.appendConsole("Build directory: \(buildDir.path)", type: .info)
         console.appendConsole("Output file: \(outputFile.path)", type: .info)
 
-        let arguments = commandTokens.map { token in
-            token
-                .replacingOccurrences(of: "{entry_file}", with: mainSrcFile.path)
-                .replacingOccurrences(of: "{object_file}", with: objectFile.path)
-                .replacingOccurrences(of: "{rom_name}", with: outputFile.path)
-        }
+        let command = template
+            .replacingOccurrences(of: "{entry_file}", with: mainSrcFile.path)
+            .replacingOccurrences(of: "{object_file}", with: objectFile.path)
+            .replacingOccurrences(of: "{rom_name}", with: outputFile.path)
+            .replacingOccurrences(of: "{src_folder}", with: srcDir.path)
+            .replacingOccurrences(of: "{build_folder}", with: buildDir.path)
 
-        console.appendConsole("$ \(toolName) \(arguments.joined(separator: " "))", type: .command)
-        let (output, exitCode) = await runProcess(toolPath, arguments: arguments, workingDirectory: projectPath)
+        console.appendConsole("$ \(command)", type: .command)
+        // Run through a shell so operators like && and ; work the same way they
+        // would if the user typed the command in a terminal.
+        let (output, exitCode) = await runProcess("/bin/sh", arguments: ["-c", command], workingDirectory: projectPath)
 
         // Log the raw output for debugging
         if !output.isEmpty {
@@ -145,7 +102,7 @@ final class BuildSystem {
         }
 
         if exitCode != 0 {
-            console.appendConsole("\(toolName) exited with code \(exitCode)", type: .error)
+            console.appendConsole("Build command exited with code \(exitCode)", type: .error)
             let parsed = parseBuildErrors(output, sourceFile: mainSourceFile)
             errors.append(contentsOf: parsed)
             for err in parsed {
@@ -191,27 +148,6 @@ final class BuildSystem {
         } else {
             console.appendConsole("BUILD FAILED — \(errors.count) error(s) (\(String(format: "%.2f", duration))s)", type: .error)
         }
-    }
-
-    /// Splits a build-command template into tokens, honoring single/double quotes
-    /// so paths containing spaces can be quoted. The first token is the tool name.
-    private func parseCommandTemplate(_ raw: String) -> [String] {
-        var tokens: [String] = []
-        var current = ""
-        var quoteChar: Character?
-        for char in raw {
-            if let q = quoteChar {
-                if char == q { quoteChar = nil } else { current.append(char) }
-            } else if char == "\"" || char == "'" {
-                quoteChar = char
-            } else if char.isWhitespace {
-                if !current.isEmpty { tokens.append(current); current = "" }
-            } else {
-                current.append(char)
-            }
-        }
-        if !current.isEmpty { tokens.append(current) }
-        return tokens
     }
 
     // MARK: - Parse errors
@@ -352,18 +288,5 @@ final class BuildSystem {
                 }
             }
         }
-    }
-
-    private func shell(_ command: String) -> String {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/sh")
-        process.arguments = ["-c", command]
-        let pipe = Pipe()
-        process.standardOutput = pipe
-        process.standardError = pipe
-        try? process.run()
-        process.waitUntilExit()
-        let data = pipe.fileHandleForReading.readDataToEndOfFile()
-        return String(data: data, encoding: .utf8) ?? ""
     }
 }

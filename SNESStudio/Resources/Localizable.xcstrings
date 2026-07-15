@@ -5767,7 +5767,7 @@
         }
       }
     },
-    "The command used to build the ROM. Use {entry_file}, {object_file}, and {rom_name} as placeholders — they're substituted with absolute paths at build time." : {
+    "The command used to build the ROM, run in a shell so &&, ;, and | work as expected. Placeholders: {entry_file}, {object_file}, {rom_name}, {src_folder}, {build_folder} — substituted with absolute paths at build time." : {
 
     },
     "The file passed to the build command as the build entry point. Other files are typically pulled in via incsrc/include." : {

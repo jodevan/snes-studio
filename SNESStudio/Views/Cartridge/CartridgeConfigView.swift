@@ -218,7 +218,7 @@ struct CartridgeConfigView: View {
                             .font(.system(size: 12, design: .monospaced))
                     }
 
-                    Text("The command used to build the ROM. Use {entry_file}, {object_file}, and {rom_name} as placeholders — they're substituted with absolute paths at build time.")
+                    Text("The command used to build the ROM, run in a shell so &&, ;, and | work as expected. Placeholders: {entry_file}, {object_file}, {rom_name}, {src_folder}, {build_folder} — substituted with absolute paths at build time.")
                         .font(.system(size: 11))
                         .foregroundStyle(SNESTheme.textDisabled)
                 }
