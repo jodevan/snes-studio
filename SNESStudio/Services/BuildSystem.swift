@@ -24,17 +24,7 @@ final class BuildSystem {
     var isBuilding = false
     var lastResult: BuildResult?
 
-    private var asarPath: String?
-
-    init() {
-        detectTools()
-    }
-
-    // MARK: - Detect asar
-
-    private func detectTools() {
-        asarPath = findTool("asar")
-    }
+    // MARK: - Tool resolution
 
     private func findTool(_ name: String) -> String? {
         // First, try using 'which' with a full shell environment
@@ -70,28 +60,27 @@ final class BuildSystem {
         return nil
     }
 
-    var toolsAvailable: Bool {
-        asarPath != nil
-    }
-
     // MARK: - Build
 
     @MainActor
     func build(project: SNESProject, console: AppState) async {
         guard !isBuilding else { return }
-        guard let asar = asarPath else {
-            console.appendConsole("asar not found. Please install asar and ensure it's in your PATH", type: .error)
-            console.appendConsole("Searched locations:", type: .info)
-            console.appendConsole("  - /opt/homebrew/bin/asar", type: .info)
-            console.appendConsole("  - /usr/local/bin/asar", type: .info)
-            console.appendConsole("  - /usr/bin/asar", type: .info)
-            console.appendConsole("  - ~/bin/asar", type: .info)
-            console.appendConsole("  - ~/.local/bin/asar", type: .info)
-            console.appendConsole("Run 'which asar' in Terminal to find its location", type: .info)
-            return
-        }
         guard let projectPath = project.projectPath else {
             console.appendConsole("Project path not defined", type: .error)
+            return
+        }
+
+        let template = project.buildSettings.buildCommand.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !template.isEmpty else {
+            console.appendConsole("No build command configured — set one in the Cartridge tab", type: .error)
+            return
+        }
+        var commandTokens = parseCommandTemplate(template)
+        let toolName = commandTokens.removeFirst()
+
+        guard let toolPath = findTool(toolName) else {
+            console.appendConsole("\(toolName) not found. Please install it and ensure it's in your PATH", type: .error)
+            console.appendConsole("Run 'which \(toolName)' in Terminal to find its location", type: .info)
             return
         }
 
@@ -100,27 +89,14 @@ final class BuildSystem {
         var errors: [BuildError] = []
 
         console.appendConsole("=== Build \(project.name) ===", type: .info)
-        console.appendConsole("Using asar at: \(asar)", type: .info)
+        console.appendConsole("Using \(toolName) at: \(toolPath)", type: .info)
 
         let srcDir = projectPath.appendingPathComponent("src")
         let buildDir = projectPath.appendingPathComponent("build")
-        let outputName = project.buildSettings.outputName
-        let outputFile = buildDir.appendingPathComponent("\(outputName).\(project.buildSettings.outputFormat)")
+        let outputFile = buildDir.appendingPathComponent(project.buildSettings.romName)
 
-        // Create build directory
-        try? FileManager.default.createDirectory(at: buildDir, withIntermediateDirectories: true)
-
-        // asar treats an existing output file as a ROM to patch and validates its
-        // current header before writing, so a stale file from a failed build would
-        // keep failing every subsequent build even after the source is fixed.
-        try? FileManager.default.removeItem(at: outputFile)
-
-        console.appendConsole("Build directory: \(buildDir.path)", type: .info)
-        console.appendConsole("Output file: \(outputFile.path)", type: .info)
-
-        // asar assembles all files in one pass, starting from the configured entry
-        // file. Falls back to the alphabetically first source file if unset or if
-        // the configured file no longer exists in the project.
+        // Build entry point. Falls back to the alphabetically first source file
+        // if unset or if the configured file no longer exists in the project.
         let configuredMainFile = project.buildSettings.mainSourceFile
             .flatMap { project.sourceFiles.contains($0) ? $0 : nil }
         guard let mainSourceFile = configuredMainFile ?? project.sourceFiles.first else {
@@ -136,29 +112,41 @@ final class BuildSystem {
             return
         }
 
-        // asar arguments: asar [options] source_file output_file
-        var args = [
-            mainSrcFile.path,
-            outputFile.path,
-        ]
-        
-        // Add debug symbols if enabled
-        if project.buildSettings.generateDebugSymbols {
-            args.insert("--symbols=wla", at: 0)
+        let objectFileName = (mainSourceFile as NSString).deletingPathExtension + ".o"
+        let objectFile = buildDir.appendingPathComponent(objectFileName)
+
+        // Create build directory
+        try? FileManager.default.createDirectory(at: buildDir, withIntermediateDirectories: true)
+
+        // Some tools (e.g. asar) treat an existing output file as a ROM to patch
+        // and validate its current header before writing, so stale artifacts from
+        // a previous failed build would keep failing every subsequent build even
+        // after the source is fixed.
+        try? FileManager.default.removeItem(at: outputFile)
+        try? FileManager.default.removeItem(at: objectFile)
+
+        console.appendConsole("Build directory: \(buildDir.path)", type: .info)
+        console.appendConsole("Output file: \(outputFile.path)", type: .info)
+
+        let arguments = commandTokens.map { token in
+            token
+                .replacingOccurrences(of: "{entry_file}", with: mainSrcFile.path)
+                .replacingOccurrences(of: "{object_file}", with: objectFile.path)
+                .replacingOccurrences(of: "{rom_name}", with: outputFile.path)
         }
 
-        console.appendConsole("$ asar \(args.joined(separator: " "))", type: .command)
-        let (output, exitCode) = await runProcess(asar, arguments: args, workingDirectory: projectPath)
-        
+        console.appendConsole("$ \(toolName) \(arguments.joined(separator: " "))", type: .command)
+        let (output, exitCode) = await runProcess(toolPath, arguments: arguments, workingDirectory: projectPath)
+
         // Log the raw output for debugging
         if !output.isEmpty {
-            console.appendConsole("asar output:", type: .info)
+            console.appendConsole("Build output:", type: .info)
             console.appendConsole(output, type: .info)
         }
 
         if exitCode != 0 {
-            console.appendConsole("asar exited with code \(exitCode)", type: .error)
-            let parsed = parseAsarErrors(output, sourceFile: mainSourceFile)
+            console.appendConsole("\(toolName) exited with code \(exitCode)", type: .error)
+            let parsed = parseBuildErrors(output, sourceFile: mainSourceFile)
             errors.append(contentsOf: parsed)
             for err in parsed {
                 console.appendConsole(
@@ -170,10 +158,11 @@ final class BuildSystem {
         }
 
         let duration = Date().timeIntervalSince(startTime)
-        let success = !errors.contains(where: { $0.severity == .error }) && exitCode == 0
+        let romExists = FileManager.default.fileExists(atPath: outputFile.path)
+        let success = !errors.contains(where: { $0.severity == .error }) && exitCode == 0 && romExists
 
         var romSize = 0
-        if success, FileManager.default.fileExists(atPath: outputFile.path) {
+        if success {
             if let attrs = try? FileManager.default.attributesOfItem(atPath: outputFile.path) {
                 romSize = (attrs[.size] as? Int) ?? 0
             }
@@ -197,15 +186,38 @@ final class BuildSystem {
         if success {
             console.appendConsole("BUILD SUCCEEDED — \(romSize) bytes (\(String(format: "%.2f", duration))s)", type: .success)
             console.appendConsole("Output: \(outputFile.path)", type: .success)
+        } else if exitCode == 0 && !romExists {
+            console.appendConsole("BUILD FAILED — command exited successfully but did not produce \(outputFile.lastPathComponent)", type: .error)
         } else {
             console.appendConsole("BUILD FAILED — \(errors.count) error(s) (\(String(format: "%.2f", duration))s)", type: .error)
         }
     }
 
+    /// Splits a build-command template into tokens, honoring single/double quotes
+    /// so paths containing spaces can be quoted. The first token is the tool name.
+    private func parseCommandTemplate(_ raw: String) -> [String] {
+        var tokens: [String] = []
+        var current = ""
+        var quoteChar: Character?
+        for char in raw {
+            if let q = quoteChar {
+                if char == q { quoteChar = nil } else { current.append(char) }
+            } else if char == "\"" || char == "'" {
+                quoteChar = char
+            } else if char.isWhitespace {
+                if !current.isEmpty { tokens.append(current); current = "" }
+            } else {
+                current.append(char)
+            }
+        }
+        if !current.isEmpty { tokens.append(current) }
+        return tokens
+    }
+
     // MARK: - Parse errors
 
-    private func parseAsarErrors(_ output: String, sourceFile: String) -> [BuildError] {
-        // asar error format: filename:line: error: message
+    private func parseBuildErrors(_ output: String, sourceFile: String) -> [BuildError] {
+        // Common compiler/assembler error format: filename:line: error: message
         // or: filename:line:col: error: message
         // or: warning: message
         var errors: [BuildError] = []

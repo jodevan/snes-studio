@@ -185,7 +185,40 @@ struct CartridgeConfigView: View {
                         .frame(width: 200)
                     }
 
-                    Text("The file passed to the assembler as the build entry point. Other files are typically pulled in via incsrc/include.")
+                    Text("The file passed to the build command as the build entry point. Other files are typically pulled in via incsrc/include.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SNESTheme.textDisabled)
+
+                    Divider()
+
+                    HStack {
+                        Text("ROM name")
+                            .font(.system(size: 12))
+                            .foregroundStyle(SNESTheme.textSecondary)
+                            .frame(width: 80, alignment: .leading)
+                        TextField("game.sfc", text: romNameBinding)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                            .frame(width: 200)
+                    }
+
+                    Text("Filename of the built ROM, including extension.")
+                        .font(.system(size: 11))
+                        .foregroundStyle(SNESTheme.textDisabled)
+
+                    Divider()
+
+                    HStack(alignment: .top) {
+                        Text("Command")
+                            .font(.system(size: 12))
+                            .foregroundStyle(SNESTheme.textSecondary)
+                            .frame(width: 80, alignment: .leading)
+                        TextField("asar {entry_file} {rom_name}", text: buildCommandBinding)
+                            .textFieldStyle(.roundedBorder)
+                            .font(.system(size: 12, design: .monospaced))
+                    }
+
+                    Text("The command used to build the ROM. Use {entry_file}, {object_file}, and {rom_name} as placeholders — they're substituted with absolute paths at build time.")
                         .font(.system(size: 11))
                         .foregroundStyle(SNESTheme.textDisabled)
                 }
@@ -256,6 +289,28 @@ struct CartridgeConfigView: View {
             set: { newValue in
                 guard var settings = state.projectManager.currentProject?.buildSettings else { return }
                 settings.mainSourceFile = newValue
+                try? state.projectManager.updateBuildSettings(settings)
+            }
+        )
+    }
+
+    private var romNameBinding: Binding<String> {
+        Binding(
+            get: { state.projectManager.currentProject?.buildSettings.romName ?? "game.sfc" },
+            set: { newValue in
+                guard var settings = state.projectManager.currentProject?.buildSettings else { return }
+                settings.romName = newValue
+                try? state.projectManager.updateBuildSettings(settings)
+            }
+        )
+    }
+
+    private var buildCommandBinding: Binding<String> {
+        Binding(
+            get: { state.projectManager.currentProject?.buildSettings.buildCommand ?? BuildSettings.defaultBuildCommand },
+            set: { newValue in
+                guard var settings = state.projectManager.currentProject?.buildSettings else { return }
+                settings.buildCommand = newValue
                 try? state.projectManager.updateBuildSettings(settings)
             }
         )
