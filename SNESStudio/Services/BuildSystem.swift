@@ -30,13 +30,13 @@ final class BuildSystem {
     func build(project: SNESProject, console: AppState) async {
         guard !isBuilding else { return }
         guard let projectPath = project.projectPath else {
-            console.appendConsole("Project path not defined", type: .error)
+            console.appendConsole(String(localized: "Project path not defined"), type: .error)
             return
         }
 
         let template = project.buildSettings.buildCommand.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !template.isEmpty else {
-            console.appendConsole("No build command configured — set one in the Cartridge tab", type: .error)
+            console.appendConsole(String(localized: "No build command configured — set one in the Cartridge tab"), type: .error)
             return
         }
 
@@ -44,7 +44,7 @@ final class BuildSystem {
         let startTime = Date()
         var errors: [BuildError] = []
 
-        console.appendConsole("=== Build \(project.name) ===", type: .info)
+        console.appendConsole(String(localized: "=== Build \(project.name) ==="), type: .info)
 
         let srcDir = projectPath.appendingPathComponent("src")
         let buildDir = projectPath.appendingPathComponent("build")
@@ -55,14 +55,14 @@ final class BuildSystem {
         let configuredMainFile = project.buildSettings.mainSourceFile
             .flatMap { project.sourceFiles.contains($0) ? $0 : nil }
         guard let mainSourceFile = configuredMainFile ?? project.sourceFiles.first else {
-            console.appendConsole("No source files found in project", type: .error)
+            console.appendConsole(String(localized: "No source files found in project"), type: .error)
             isBuilding = false
             return
         }
 
         let mainSrcFile = srcDir.appendingPathComponent(mainSourceFile)
         guard FileManager.default.fileExists(atPath: mainSrcFile.path) else {
-            console.appendConsole("Main source file not found: \(mainSourceFile)", type: .error)
+            console.appendConsole(String(localized: "Main source file not found: \(mainSourceFile)"), type: .error)
             isBuilding = false
             return
         }
@@ -80,8 +80,8 @@ final class BuildSystem {
         try? FileManager.default.removeItem(at: outputFile)
         try? FileManager.default.removeItem(at: objectFile)
 
-        console.appendConsole("Build directory: \(buildDir.path)", type: .info)
-        console.appendConsole("Output file: \(outputFile.path)", type: .info)
+        console.appendConsole(String(localized: "Build directory: \(buildDir.path)"), type: .info)
+        console.appendConsole(String(localized: "Output file: \(outputFile.path)"), type: .info)
 
         let command = template
             .replacingOccurrences(of: "{entry_file}", with: mainSrcFile.path)
@@ -90,19 +90,20 @@ final class BuildSystem {
             .replacingOccurrences(of: "{src_folder}", with: srcDir.path)
             .replacingOccurrences(of: "{build_folder}", with: buildDir.path)
 
-        console.appendConsole("$ \(command)", type: .command)
+        console.appendConsole(String(localized: "$ \(command)"), type: .command)
         // Run through a shell so operators like && and ; work the same way they
         // would if the user typed the command in a terminal.
         let (output, exitCode) = await runProcess("/bin/sh", arguments: ["-c", command], workingDirectory: projectPath)
 
         // Log the raw output for debugging
         if !output.isEmpty {
-            console.appendConsole("Build output:", type: .info)
+            console.appendConsole(String(localized: "Build output:"), type: .info)
             console.appendConsole(output, type: .info)
         }
 
         if exitCode != 0 {
-            console.appendConsole("Build command exited with code \(exitCode)", type: .error)
+            let exitCodeText = String(exitCode)
+            console.appendConsole(String(localized: "Build command exited with code \(exitCodeText)"), type: .error)
             let parsed = parseBuildErrors(output, sourceFile: mainSourceFile)
             errors.append(contentsOf: parsed)
             for err in parsed {
@@ -141,12 +142,16 @@ final class BuildSystem {
         isBuilding = false
 
         if success {
-            console.appendConsole("BUILD SUCCEEDED — \(romSize) bytes (\(String(format: "%.2f", duration))s)", type: .success)
-            console.appendConsole("Output: \(outputFile.path)", type: .success)
+            let romSizeText = String(romSize)
+            let durationText = String(format: "%.2f", duration)
+            console.appendConsole(String(localized: "BUILD SUCCEEDED — \(romSizeText) bytes (\(durationText)s)"), type: .success)
+            console.appendConsole(String(localized: "Output: \(outputFile.path)"), type: .success)
         } else if exitCode == 0 && !romExists {
-            console.appendConsole("BUILD FAILED — command exited successfully but did not produce \(outputFile.lastPathComponent)", type: .error)
+            console.appendConsole(String(localized: "BUILD FAILED — command exited successfully but did not produce \(outputFile.lastPathComponent)"), type: .error)
         } else {
-            console.appendConsole("BUILD FAILED — \(errors.count) error(s) (\(String(format: "%.2f", duration))s)", type: .error)
+            let errorCountText = String(errors.count)
+            let durationText = String(format: "%.2f", duration)
+            console.appendConsole(String(localized: "BUILD FAILED — \(errorCountText) error(s) (\(durationText)s)"), type: .error)
         }
     }
 
