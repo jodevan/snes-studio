@@ -82,12 +82,23 @@ struct SNESStudioApp: App {
                 Button("New Project...") {
                     NSApp.sendAction(#selector(AppDelegate.newProject), to: nil, from: nil)
                 }
-                .keyboardShortcut("n", modifiers: [.command])
+                .keyboardShortcut("n", modifiers: [.command, .shift])
 
                 Button("Open Project...") {
                     NSApp.sendAction(#selector(AppDelegate.openProject), to: nil, from: nil)
                 }
                 .keyboardShortcut("o", modifiers: [.command])
+
+                Button("Clear Recent Projects") {
+                    appState.projectManager.clearRecents()
+                }
+                .disabled(appState.projectManager.recentProjects.isEmpty)
+
+                Button("Add File...") {
+                    NotificationCenter.default.post(name: .addFile, object: nil)
+                }
+                .keyboardShortcut("n", modifiers: [.command])
+                .disabled(appState.projectManager.currentProject == nil)
 
                 Divider()
 
@@ -173,6 +184,7 @@ struct SNESStudioApp: App {
 extension Notification.Name {
     static let setLevel = Notification.Name("SNESStudio.setLevel")
     static let toggleExplorer = Notification.Name("SNESStudio.toggleExplorer")
+    static let addFile = Notification.Name("SNESStudio.addFile")
     static let toggleRightPanel = Notification.Name("SNESStudio.toggleRightPanel")
     static let toggleConsole = Notification.Name("SNESStudio.toggleConsole")
     static let toggleRecentProjects = Notification.Name("SNESStudio.toggleRecentProjects")

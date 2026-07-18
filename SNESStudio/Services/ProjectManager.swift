@@ -173,4 +173,9 @@ final class ProjectManager {
         let bookmarks = recentProjects.compactMap { try? $0.bookmarkData(options: .withSecurityScope) }
         UserDefaults.standard.set(bookmarks, forKey: recentsKey)
     }
+
+    func clearRecents() {
+        recentProjects = []
+        UserDefaults.standard.removeObject(forKey: recentsKey)
+    }
 }

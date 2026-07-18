@@ -94,5 +94,8 @@ struct SubTabBar: View {
                 state.activeLevel.accent.frame(height: 2)
             }
         }
+        .onHover { hovering in
+            if hovering { NSCursor.arrow.push() } else { NSCursor.pop() }
+        }
     }
 }

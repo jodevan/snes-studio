@@ -170,6 +170,9 @@ private struct KeyboardShortcutHandlers: ViewModifier {
             .onReceive(NotificationCenter.default.publisher(for: .toggleExplorer)) { _ in
                 state.toggleExplorer()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .addFile)) { _ in
+                state.beginCreateFile()
+            }
             .onReceive(NotificationCenter.default.publisher(for: .toggleRightPanel)) { _ in
                 state.toggleRightPanel()
             }

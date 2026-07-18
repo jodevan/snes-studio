@@ -20,6 +20,11 @@ final class AppState {
     /// Files currently open in the LOGIQUE tab bar, as paths relative to the project root.
     var openFiles: [String] = []
     var explorerRefreshToken: Int = 0
+    /// The folder selected in the Explorer (path relative to the project root, "" for the project root itself).
+    var selectedExplorerFolderPath: String? = nil
+    var expandedExplorerPaths: Set<String> = []
+    /// Non-nil while the inline "new file" text field is showing; value is the parent folder ("" = project root).
+    var creatingFileParentPath: String? = nil
 
     // MARK: - Panel visibility
     var isExplorerVisible: Bool = true
@@ -184,6 +189,50 @@ final class AppState {
         }
     }
 
+    // MARK: - Explorer file creation
+
+    /// Shows the inline "new file" text field under the selected folder (or the project root),
+    /// expanding any collapsed ancestor folders so it's visible.
+    func beginCreateFile() {
+        guard projectManager.currentProject != nil else { return }
+        isExplorerVisible = true
+        let parent = selectedExplorerFolderPath ?? ""
+        var ancestor = parent
+        while !ancestor.isEmpty {
+            expandedExplorerPaths.insert(ancestor)
+            ancestor = (ancestor as NSString).deletingLastPathComponent
+        }
+        creatingFileParentPath = parent
+    }
+
+    /// Creates an empty file named `name` inside `relativeFolder` (path relative to the
+    /// project root, "" for the project root) and opens it.
+    func createFile(name: String, inFolder relativeFolder: String) {
+        guard let projectPath = projectManager.currentProject?.projectPath else { return }
+        let folderURL = relativeFolder.isEmpty ? projectPath : projectPath.appendingPathComponent(relativeFolder)
+        let fileURL = folderURL.appendingPathComponent(name)
+
+        guard !FileManager.default.fileExists(atPath: fileURL.path) else {
+            appendConsole(String(localized: "File already exists: \(name)"), type: .warning)
+            return
+        }
+        guard FileManager.default.createFile(atPath: fileURL.path, contents: nil) else {
+            appendConsole(String(localized: "Could not create file: \(name)"), type: .error)
+            return
+        }
+
+        // rescanSourceFiles() only refreshes the Explorer itself when the .asm/.inc
+        // file list actually changed, so a non-code file (or one outside src/) needs
+        // an unconditional refresh to show up in the tree right away.
+        if relativeFolder == "src" {
+            rescanSourceFiles()
+        }
+        refreshExplorer()
+
+        let relativePath = relativeFolder.isEmpty ? name : "\(relativeFolder)/\(name)"
+        openFile(relativePath: relativePath)
+    }
+
     /// Label for the current active sub-tab
     var activeSubTabLabel: String {
         guard let id = activeSubTabID[activeLevel], !id.isEmpty else { return "" }
@@ -259,6 +308,12 @@ final class AppState {
         sourceFiles = project.sourceFiles
         tabManager.closeAllTabs()
         isRecentProjectsOverlayVisible = false
+        activeLevel = .logique
+
+        // Reset Explorer state
+        selectedExplorerFolderPath = nil
+        expandedExplorerPaths = []
+        creatingFileParentPath = nil
 
         // Open the first source file by default
         openFiles = []

@@ -1,9 +1,9 @@
 import SwiftUI
 
 enum PyramidLevel: Int, CaseIterable, Identifiable, Codable {
+    case logique = 3
     case atelier = 1
     case orchestre = 2
-    case logique = 3
     case hardware = 4
 
     var id: Int { rawValue }
