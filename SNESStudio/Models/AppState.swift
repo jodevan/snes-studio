@@ -16,13 +16,20 @@ final class AppState {
     // MARK: - Tabs (kept for screen tab tracking)
     var tabManager = TabManager()
 
+    // MARK: - Explorer / open files
+    /// Files currently open in the LOGIQUE tab bar, as paths relative to the project root.
+    var openFiles: [String] = []
+    var explorerRefreshToken: Int = 0
+
     // MARK: - Panel visibility
+    var isExplorerVisible: Bool = true
     var isRightPanelVisible: Bool = false
     var isConsoleVisible: Bool = true
     var isRecentProjectsVisible: Bool = true
     var isRecentProjectsOverlayVisible: Bool = false
 
     // MARK: - Panel sizes
+    var explorerWidth: CGFloat = SNESTheme.sidebarDefaultWidth
     var rightPanelWidth: CGFloat = SNESTheme.rightPanelDefaultWidth
     var bottomHeight: CGFloat = SNESTheme.hardwareBarHeight + SNESTheme.consoleDefaultHeight
 
@@ -112,6 +119,16 @@ final class AppState {
         }
     }
 
+    func toggleExplorer() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            isExplorerVisible.toggle()
+        }
+    }
+
+    func refreshExplorer() {
+        explorerRefreshToken += 1
+    }
+
     /// On the Welcome screen this shows/hides the docked sidebar; once a project is
     /// open (and that sidebar isn't part of the view tree) it toggles a floating
     /// overlay instead, so the same menu command/shortcut works in both contexts.
@@ -143,18 +160,35 @@ final class AppState {
 
     // MARK: - File URL helper
 
-    /// Returns the file URL for a source file ID (filename like "main.asm")
+    /// Returns the file URL for a file ID (path relative to the project root, e.g. "src/main.asm")
     func fileURL(for fileID: String) -> URL? {
-        guard sourceFiles.contains(fileID),
-              let srcDir = projectManager.currentProject?.sourceDirectoryURL else { return nil }
-        return srcDir.appendingPathComponent(fileID)
+        guard let projectPath = projectManager.currentProject?.projectPath else { return nil }
+        return projectPath.appendingPathComponent(fileID)
+    }
+
+    // MARK: - Open files (LOGIQUE)
+
+    /// Opens a file (path relative to the project root) in the LOGIQUE editor and switches to it.
+    func openFile(relativePath: String) {
+        activeLevel = .logique
+        if !openFiles.contains(relativePath) {
+            openFiles.append(relativePath)
+        }
+        activeSubTabID[.logique] = relativePath
+    }
+
+    func closeFile(_ relativePath: String) {
+        openFiles.removeAll { $0 == relativePath }
+        if activeSubTabID[.logique] == relativePath {
+            activeSubTabID[.logique] = openFiles.last ?? ""
+        }
     }
 
     /// Label for the current active sub-tab
     var activeSubTabLabel: String {
         guard let id = activeSubTabID[activeLevel], !id.isEmpty else { return "" }
-        // For source files, the ID is the filename
-        if activeLevel == .logique { return id }
+        // For source files, the ID is a path relative to the project root — show just the filename
+        if activeLevel == .logique { return (id as NSString).lastPathComponent }
         // For screen tabs
         if id.hasPrefix("screen_") {
             if let uuid = UUID(uuidString: String(id.dropFirst("screen_".count))),
@@ -226,12 +260,18 @@ final class AppState {
         tabManager.closeAllTabs()
         isRecentProjectsOverlayVisible = false
 
-        // Set default logique sub-tab to first source file
+        // Open the first source file by default
+        openFiles = []
         if let first = sourceFiles.first {
-            activeSubTabID[.logique] = first
+            let path = "src/\(first)"
+            openFiles = [path]
+            activeSubTabID[.logique] = path
+        } else {
+            activeSubTabID[.logique] = ""
         }
 
         startWatchingSourceDirectory()
+        refreshExplorer()
 
         if let assetsDir = project.assetsDirectoryURL {
             let result = assetStore.load(from: assetsDir)
@@ -306,9 +346,13 @@ final class AppState {
         sourceFiles = files
         projectManager.currentProject?.sourceFiles = files
 
-        if let active = activeSubTabID[.logique], !active.isEmpty, !files.contains(active) {
-            activeSubTabID[.logique] = files.first ?? ""
+        let validPaths = Set(files.map { "src/\($0)" })
+        openFiles.removeAll { $0.hasPrefix("src/") && !validPaths.contains($0) }
+        if let active = activeSubTabID[.logique], active.hasPrefix("src/"), !validPaths.contains(active) {
+            activeSubTabID[.logique] = openFiles.last ?? ""
         }
+
+        refreshExplorer()
     }
 
     func recalculateBudget() {
@@ -333,13 +377,11 @@ final class AppState {
     }
 
     func openFileAtLine(file: String, line: Int) {
-        if sourceFiles.contains(file) {
-            activeLevel = .logique
-            activeSubTabID[.logique] = file
-        } else {
+        guard sourceFiles.contains(file) else {
             appendConsole(String(localized: "File \(file) not found in project"), type: .warning)
             return
         }
+        openFile(relativePath: "src/\(file)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             NotificationCenter.default.post(
                 name: .setCursorPosition,
@@ -355,6 +397,7 @@ final class AppState {
             return
         }
         await buildSystem.build(project: project, console: self)
+        refreshExplorer()
     }
 
     func runProject() async {

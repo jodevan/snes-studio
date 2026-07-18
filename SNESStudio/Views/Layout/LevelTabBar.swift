@@ -21,8 +21,8 @@ struct SubTabBar: View {
                 ("niveaux", "Screens", "square.grid.3x3.fill"),
             ]
         case .logique:
-            return state.sourceFiles.map { file in
-                (file, file, "doc.text")
+            return state.openFiles.map { path in
+                (path, (path as NSString).lastPathComponent, "doc.text")
             }
         case .hardware:
             return [
@@ -59,26 +59,40 @@ struct SubTabBar: View {
     private func subTab(id: String, label: String, icon: String) -> some View {
         let activeID = state.activeSubTabID[state.activeLevel] ?? ""
         let isActive = activeID == id
+        let isClosable = state.activeLevel == .logique
 
-        return Button {
-            state.selectSubTab(id)
-        } label: {
-            HStack(spacing: 4) {
-                Image(systemName: icon)
-                    .font(.system(size: 10))
-                Text(label)
-                    .font(.system(size: 11, weight: isActive ? .medium : .regular))
-                    .lineLimit(1)
-            }
-            .foregroundStyle(isActive ? SNESTheme.textPrimary : SNESTheme.textSecondary)
-            .padding(.horizontal, 10)
-            .frame(height: 34)
-            .overlay(alignment: .bottom) {
-                if isActive {
-                    state.activeLevel.accent.frame(height: 2)
+        return HStack(spacing: 4) {
+            Button {
+                state.selectSubTab(id)
+            } label: {
+                HStack(spacing: 4) {
+                    Image(systemName: icon)
+                        .font(.system(size: 10))
+                    Text(label)
+                        .font(.system(size: 11, weight: isActive ? .medium : .regular))
+                        .lineLimit(1)
                 }
+                .foregroundStyle(isActive ? SNESTheme.textPrimary : SNESTheme.textSecondary)
+            }
+            .buttonStyle(.plain)
+
+            if isClosable {
+                Button {
+                    state.closeFile(id)
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundStyle(SNESTheme.textDisabled)
+                }
+                .buttonStyle(.plain)
             }
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .frame(height: 34)
+        .overlay(alignment: .bottom) {
+            if isActive {
+                state.activeLevel.accent.frame(height: 2)
+            }
+        }
     }
 }

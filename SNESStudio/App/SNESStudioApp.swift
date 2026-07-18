@@ -54,6 +54,11 @@ struct SNESStudioApp: App {
 
             // Panel toggles
             CommandGroup(after: .sidebar) {
+                Button("Toggle Explorer") {
+                    NotificationCenter.default.post(name: .toggleExplorer, object: nil)
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+
                 Button("Toggle Right Panel") {
                     NotificationCenter.default.post(name: .toggleRightPanel, object: nil)
                 }
@@ -167,6 +172,7 @@ struct SNESStudioApp: App {
 
 extension Notification.Name {
     static let setLevel = Notification.Name("SNESStudio.setLevel")
+    static let toggleExplorer = Notification.Name("SNESStudio.toggleExplorer")
     static let toggleRightPanel = Notification.Name("SNESStudio.toggleRightPanel")
     static let toggleConsole = Notification.Name("SNESStudio.toggleConsole")
     static let toggleRecentProjects = Notification.Name("SNESStudio.toggleRecentProjects")

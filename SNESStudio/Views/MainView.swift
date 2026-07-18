@@ -5,6 +5,7 @@ struct MainView: View {
     @Bindable var state: AppState
 
     // Drag state for resize handles
+    @State private var dragExplorerStart: CGFloat = 0
     @State private var dragRightStart: CGFloat = 0
     @State private var dragBottomStart: CGFloat = 0
 
@@ -55,6 +56,19 @@ struct MainView: View {
 
             // Main content area
             HStack(spacing: 0) {
+                // Explorer panel — full height
+                if state.isExplorerVisible {
+                    ExplorerPanelView(state: state)
+                        .frame(width: state.explorerWidth)
+
+                    ResizeHandle(direction: .horizontal) { delta in
+                        let newWidth = dragExplorerStart + delta
+                        state.explorerWidth = min(max(newWidth, SNESTheme.sidebarMinWidth), SNESTheme.sidebarMaxWidth)
+                    }
+                    .onAppear { dragExplorerStart = state.explorerWidth }
+                    .onChange(of: state.explorerWidth) { _, new in dragExplorerStart = new }
+                }
+
                 // Center area (editor + bottom)
                 VStack(spacing: 0) {
                     CenterEditorView(state: state)
@@ -152,6 +166,9 @@ private struct KeyboardShortcutHandlers: ViewModifier {
                 if let level = notif.object as? PyramidLevel {
                     state.setLevel(level)
                 }
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .toggleExplorer)) { _ in
+                state.toggleExplorer()
             }
             .onReceive(NotificationCenter.default.publisher(for: .toggleRightPanel)) { _ in
                 state.toggleRightPanel()

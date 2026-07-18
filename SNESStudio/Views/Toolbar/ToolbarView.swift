@@ -5,8 +5,16 @@ struct ToolbarView: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            // Left: Build/Run actions
+            // Left: Explorer toggle + Build/Run actions
             HStack(spacing: 6) {
+                ToolbarToggle(icon: "sidebar.left", isActive: state.isExplorerVisible) {
+                    state.toggleExplorer()
+                }
+
+                Divider()
+                    .frame(height: 16)
+                    .padding(.horizontal, 4)
+
                 ToolbarButton(icon: "hammer", label: "Build", shortcut: "B") {
                     Task { await state.buildProject() }
                 }
