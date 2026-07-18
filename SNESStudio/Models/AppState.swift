@@ -68,6 +68,7 @@ final class AppState {
         if let observer = terminationObserver {
             NotificationCenter.default.removeObserver(observer)
         }
+        sourceDirWatcher?.cancel()
     }
 
     // MARK: - Navigation Actions
@@ -230,6 +231,8 @@ final class AppState {
             activeSubTabID[.logique] = first
         }
 
+        startWatchingSourceDirectory()
+
         if let assetsDir = project.assetsDirectoryURL {
             let result = assetStore.load(from: assetsDir)
             if !result.directoryExists {
@@ -252,6 +255,60 @@ final class AppState {
         }
         recalculateBudget()
         appendConsole(String(localized: "Project \"\(project.name)\" loaded — \(project.projectPath?.path ?? "?")"), type: .success)
+    }
+
+    // MARK: - Source directory watching
+
+    private var sourceDirWatcher: DispatchSourceFileSystemObject?
+    private var sourceRescanWork: DispatchWorkItem?
+
+    /// Watches the project's src/ directory so files added/removed outside the
+    /// app (or by external tools) refresh the LOGIQUE file list without reopening.
+    private func startWatchingSourceDirectory() {
+        sourceDirWatcher?.cancel()
+        sourceDirWatcher = nil
+
+        guard let srcDir = projectManager.currentProject?.sourceDirectoryURL else { return }
+        let fd = open(srcDir.path, O_EVTONLY)
+        guard fd >= 0 else { return }
+
+        let source = DispatchSource.makeFileSystemObjectSource(fileDescriptor: fd, eventMask: .write, queue: .main)
+        source.setEventHandler { [weak self] in
+            self?.scheduleSourceFilesRescan()
+        }
+        source.setCancelHandler {
+            close(fd)
+        }
+        source.resume()
+        sourceDirWatcher = source
+    }
+
+    /// Debounced so a single save (temp file + rename) doesn't trigger repeated rescans.
+    private func scheduleSourceFilesRescan() {
+        sourceRescanWork?.cancel()
+        let work = DispatchWorkItem { [weak self] in
+            self?.rescanSourceFiles()
+        }
+        sourceRescanWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+    }
+
+    private func rescanSourceFiles() {
+        guard let srcDir = projectManager.currentProject?.sourceDirectoryURL,
+              FileManager.default.fileExists(atPath: srcDir.path) else { return }
+        let contents = (try? FileManager.default.contentsOfDirectory(at: srcDir, includingPropertiesForKeys: nil)) ?? []
+        let files = contents
+            .filter { $0.pathExtension == "asm" || $0.pathExtension == "inc" }
+            .map { $0.lastPathComponent }
+            .sorted()
+        guard files != sourceFiles else { return }
+
+        sourceFiles = files
+        projectManager.currentProject?.sourceFiles = files
+
+        if let active = activeSubTabID[.logique], !active.isEmpty, !files.contains(active) {
+            activeSubTabID[.logique] = files.first ?? ""
+        }
     }
 
     func recalculateBudget() {
