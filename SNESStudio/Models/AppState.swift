@@ -1,6 +1,14 @@
 import SwiftUI
 import AppKit
 
+/// State for the Explorer's inline text-field editing (new file/folder name, or rename).
+/// Paths are relative to the project root; "" means the project root itself.
+enum ExplorerInlineEdit: Equatable {
+    case creatingFile(parent: String)
+    case creatingFolder(parent: String)
+    case renaming(path: String)
+}
+
 @Observable
 final class AppState {
     // MARK: - Navigation
@@ -23,8 +31,10 @@ final class AppState {
     /// The folder selected in the Explorer (path relative to the project root, "" for the project root itself).
     var selectedExplorerFolderPath: String? = nil
     var expandedExplorerPaths: Set<String> = []
-    /// Non-nil while the inline "new file" text field is showing; value is the parent folder ("" = project root).
-    var creatingFileParentPath: String? = nil
+    /// Non-nil while an inline text field (new file/folder name, or rename) is showing in the Explorer.
+    var explorerInlineEdit: ExplorerInlineEdit? = nil
+    /// Path (relative to the project root) most recently copied via the Explorer's Copy action.
+    var explorerClipboardPath: String? = nil
 
     // MARK: - Panel visibility
     var isExplorerVisible: Bool = true
@@ -189,20 +199,37 @@ final class AppState {
         }
     }
 
-    // MARK: - Explorer file creation
+    // MARK: - Explorer file operations
 
-    /// Shows the inline "new file" text field under the selected folder (or the project root),
-    /// expanding any collapsed ancestor folders so it's visible.
-    func beginCreateFile() {
+    /// Shows an inline "new file"/"new folder" text field under `parent` (or the current
+    /// Explorer selection/project root when `parent` is nil), expanding any collapsed
+    /// ancestor folders so it's visible.
+    func beginCreateItem(isFolder: Bool, in parent: String? = nil) {
         guard projectManager.currentProject != nil else { return }
         isExplorerVisible = true
-        let parent = selectedExplorerFolderPath ?? ""
-        var ancestor = parent
+        let target = parent ?? selectedExplorerFolderPath ?? ""
+        expandExplorerAncestors(of: target)
+        if parent != nil { selectedExplorerFolderPath = target }
+        explorerInlineEdit = isFolder ? .creatingFolder(parent: target) : .creatingFile(parent: target)
+    }
+
+    /// Kept for the File menu / Cmd+N call site.
+    func beginCreateFile() {
+        beginCreateItem(isFolder: false)
+    }
+
+    /// Shows an inline rename text field in place of the row for `relativePath`.
+    func beginRename(_ relativePath: String) {
+        isExplorerVisible = true
+        explorerInlineEdit = .renaming(path: relativePath)
+    }
+
+    private func expandExplorerAncestors(of path: String) {
+        var ancestor = path
         while !ancestor.isEmpty {
             expandedExplorerPaths.insert(ancestor)
             ancestor = (ancestor as NSString).deletingLastPathComponent
         }
-        creatingFileParentPath = parent
     }
 
     /// Creates an empty file named `name` inside `relativeFolder` (path relative to the
@@ -221,16 +248,180 @@ final class AppState {
             return
         }
 
-        // rescanSourceFiles() only refreshes the Explorer itself when the .asm/.inc
-        // file list actually changed, so a non-code file (or one outside src/) needs
-        // an unconditional refresh to show up in the tree right away.
-        if relativeFolder == "src" {
-            rescanSourceFiles()
-        }
-        refreshExplorer()
+        syncFileLists()
 
         let relativePath = relativeFolder.isEmpty ? name : "\(relativeFolder)/\(name)"
         openFile(relativePath: relativePath)
+    }
+
+    /// Creates a folder named `name` inside `relativeFolder` and selects it.
+    func createFolder(name: String, inFolder relativeFolder: String) {
+        guard let projectPath = projectManager.currentProject?.projectPath else { return }
+        let folderURL = relativeFolder.isEmpty ? projectPath : projectPath.appendingPathComponent(relativeFolder)
+        let newFolderURL = folderURL.appendingPathComponent(name)
+
+        guard !FileManager.default.fileExists(atPath: newFolderURL.path) else {
+            appendConsole(String(localized: "Folder already exists: \(name)"), type: .warning)
+            return
+        }
+        do {
+            try FileManager.default.createDirectory(at: newFolderURL, withIntermediateDirectories: false)
+        } catch {
+            appendConsole(String(localized: "Could not create folder: \(error.localizedDescription)"), type: .error)
+            return
+        }
+
+        let relativePath = relativeFolder.isEmpty ? name : "\(relativeFolder)/\(name)"
+        selectedExplorerFolderPath = relativePath
+        syncFileLists()
+    }
+
+    /// Renames the file/folder at `relativePath` to `newName`, remapping any open tabs,
+    /// selection, and expansion state that pointed inside it.
+    func renameItem(at relativePath: String, to newName: String) {
+        guard let projectPath = projectManager.currentProject?.projectPath else { return }
+        let parent = (relativePath as NSString).deletingLastPathComponent
+        let newRelativePath = parent.isEmpty ? newName : "\(parent)/\(newName)"
+        guard newRelativePath != relativePath else { return }
+
+        let oldURL = projectPath.appendingPathComponent(relativePath)
+        let newURL = projectPath.appendingPathComponent(newRelativePath)
+        guard !FileManager.default.fileExists(atPath: newURL.path) else {
+            appendConsole(String(localized: "\"\(newName)\" already exists"), type: .warning)
+            return
+        }
+        do {
+            try FileManager.default.moveItem(at: oldURL, to: newURL)
+        } catch {
+            appendConsole(String(localized: "Rename failed: \(error.localizedDescription)"), type: .error)
+            return
+        }
+        remapExplorerPaths(from: relativePath, to: newRelativePath)
+        syncFileLists()
+    }
+
+    /// Moves the file/folder at `relativePath` into `targetFolder` (path relative to the
+    /// project root, "" for the project root). No-op if it's already there.
+    func moveItem(at relativePath: String, toFolder targetFolder: String) {
+        guard let projectPath = projectManager.currentProject?.projectPath else { return }
+        guard relativePath != targetFolder, !targetFolder.hasPrefix(relativePath + "/") else {
+            appendConsole(String(localized: "Can't move an item into itself"), type: .warning)
+            return
+        }
+        let name = (relativePath as NSString).lastPathComponent
+        let currentParent = (relativePath as NSString).deletingLastPathComponent
+        guard currentParent != targetFolder else { return }
+
+        let newRelativePath = targetFolder.isEmpty ? name : "\(targetFolder)/\(name)"
+        let oldURL = projectPath.appendingPathComponent(relativePath)
+        let newURL = projectPath.appendingPathComponent(newRelativePath)
+        guard !FileManager.default.fileExists(atPath: newURL.path) else {
+            appendConsole(String(localized: "\"\(name)\" already exists in the destination"), type: .warning)
+            return
+        }
+        do {
+            try FileManager.default.moveItem(at: oldURL, to: newURL)
+        } catch {
+            appendConsole(String(localized: "Move failed: \(error.localizedDescription)"), type: .error)
+            return
+        }
+        remapExplorerPaths(from: relativePath, to: newRelativePath)
+        syncFileLists()
+    }
+
+    /// Marks `relativePath` to be duplicated by a later `pasteFromClipboard`.
+    func copyToClipboard(_ relativePath: String) {
+        explorerClipboardPath = relativePath
+    }
+
+    /// Duplicates the clipboard item into `targetFolder`, auto-renaming on a name collision
+    /// the way Finder does ("name copy.ext", "name copy 2.ext", ...).
+    func pasteFromClipboard(intoFolder targetFolder: String) {
+        guard let source = explorerClipboardPath,
+              let projectPath = projectManager.currentProject?.projectPath else { return }
+        let sourceURL = projectPath.appendingPathComponent(source)
+        guard FileManager.default.fileExists(atPath: sourceURL.path) else {
+            appendConsole(String(localized: "Copied item no longer exists"), type: .warning)
+            explorerClipboardPath = nil
+            return
+        }
+
+        let name = (source as NSString).lastPathComponent
+        let destinationURL = uniqueExplorerDestination(forName: name, inFolder: targetFolder, projectPath: projectPath)
+        do {
+            try FileManager.default.copyItem(at: sourceURL, to: destinationURL)
+        } catch {
+            appendConsole(String(localized: "Paste failed: \(error.localizedDescription)"), type: .error)
+            return
+        }
+        syncFileLists()
+    }
+
+    private func uniqueExplorerDestination(forName name: String, inFolder folder: String, projectPath: URL) -> URL {
+        let folderURL = folder.isEmpty ? projectPath : projectPath.appendingPathComponent(folder)
+        let firstCandidate = folderURL.appendingPathComponent(name)
+        guard FileManager.default.fileExists(atPath: firstCandidate.path) else { return firstCandidate }
+
+        let ext = (name as NSString).pathExtension
+        let base = (name as NSString).deletingPathExtension
+        var counter = 2
+        var candidate = folderURL.appendingPathComponent(ext.isEmpty ? "\(base) copy" : "\(base) copy.\(ext)")
+        while FileManager.default.fileExists(atPath: candidate.path) {
+            let suffixed = ext.isEmpty ? "\(base) copy \(counter)" : "\(base) copy \(counter).\(ext)"
+            candidate = folderURL.appendingPathComponent(suffixed)
+            counter += 1
+        }
+        return candidate
+    }
+
+    /// Moves the file/folder at `relativePath` to the Trash, closing any open tabs under it.
+    func deleteItem(at relativePath: String) {
+        guard let projectPath = projectManager.currentProject?.projectPath else { return }
+        let url = projectPath.appendingPathComponent(relativePath)
+        do {
+            try FileManager.default.trashItem(at: url, resultingItemURL: nil)
+        } catch {
+            appendConsole(String(localized: "Delete failed: \(error.localizedDescription)"), type: .error)
+            return
+        }
+
+        for path in openFiles where path == relativePath || path.hasPrefix(relativePath + "/") {
+            closeFile(path)
+        }
+        if selectedExplorerFolderPath == relativePath { selectedExplorerFolderPath = nil }
+        expandedExplorerPaths.remove(relativePath)
+        if explorerClipboardPath == relativePath { explorerClipboardPath = nil }
+        syncFileLists()
+    }
+
+    func revealInFinder(_ relativePath: String) {
+        guard let projectPath = projectManager.currentProject?.projectPath else { return }
+        NSWorkspace.shared.activateFileViewerSelecting([projectPath.appendingPathComponent(relativePath)])
+    }
+
+    /// Updates open tabs, selection, and expansion state after a file/folder moved from
+    /// `oldPath` to `newPath` (covers both a rename and a drag-and-drop move).
+    private func remapExplorerPaths(from oldPath: String, to newPath: String) {
+        func remap(_ path: String) -> String {
+            if path == oldPath { return newPath }
+            if path.hasPrefix(oldPath + "/") { return newPath + path.dropFirst(oldPath.count) }
+            return path
+        }
+        openFiles = openFiles.map(remap)
+        if let active = activeSubTabID[.logique] {
+            activeSubTabID[.logique] = remap(active)
+        }
+        expandedExplorerPaths = Set(expandedExplorerPaths.map(remap))
+        if let selected = selectedExplorerFolderPath {
+            selectedExplorerFolderPath = remap(selected)
+        }
+    }
+
+    /// Rescans src/ (for the build system's file list) and refreshes the Explorer tree.
+    /// Used after any operation that touches the filesystem outside the normal editor save path.
+    private func syncFileLists() {
+        rescanSourceFiles()
+        refreshExplorer()
     }
 
     /// Label for the current active sub-tab
@@ -313,7 +504,8 @@ final class AppState {
         // Reset Explorer state
         selectedExplorerFolderPath = nil
         expandedExplorerPaths = []
-        creatingFileParentPath = nil
+        explorerInlineEdit = nil
+        explorerClipboardPath = nil
 
         // Open the first source file by default
         openFiles = []
