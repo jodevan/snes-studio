@@ -27,6 +27,8 @@ final class AppState {
     // MARK: - Explorer / open files
     /// Files currently open in the LOGIQUE tab bar, as paths relative to the project root.
     var openFiles: [String] = []
+    /// Cached `FileKind` for each open file, sniffed once when opened (see `openFile`).
+    var openFileKinds: [String: FileKind] = [:]
     var explorerRefreshToken: Int = 0
     /// The folder selected in the Explorer (path relative to the project root, "" for the project root itself).
     var selectedExplorerFolderPath: String? = nil
@@ -189,11 +191,15 @@ final class AppState {
         if !openFiles.contains(relativePath) {
             openFiles.append(relativePath)
         }
+        if openFileKinds[relativePath] == nil {
+            openFileKinds[relativePath] = FileKind.openKind(path: relativePath, url: fileURL(for: relativePath))
+        }
         activeSubTabID[.logique] = relativePath
     }
 
     func closeFile(_ relativePath: String) {
         openFiles.removeAll { $0 == relativePath }
+        openFileKinds.removeValue(forKey: relativePath)
         if activeSubTabID[.logique] == relativePath {
             activeSubTabID[.logique] = openFiles.last ?? ""
         }
@@ -408,6 +414,9 @@ final class AppState {
             return path
         }
         openFiles = openFiles.map(remap)
+        openFileKinds = openFileKinds.reduce(into: [:]) { result, entry in
+            result[remap(entry.key)] = entry.value
+        }
         if let active = activeSubTabID[.logique] {
             activeSubTabID[.logique] = remap(active)
         }
@@ -509,10 +518,9 @@ final class AppState {
 
         // Open the first source file by default
         openFiles = []
+        openFileKinds = [:]
         if let first = sourceFiles.first {
-            let path = "src/\(first)"
-            openFiles = [path]
-            activeSubTabID[.logique] = path
+            openFile(relativePath: "src/\(first)")
         } else {
             activeSubTabID[.logique] = ""
         }
@@ -595,6 +603,7 @@ final class AppState {
 
         let validPaths = Set(files.map { "src/\($0)" })
         openFiles.removeAll { $0.hasPrefix("src/") && !validPaths.contains($0) }
+        openFileKinds = openFileKinds.filter { openFiles.contains($0.key) }
         if let active = activeSubTabID[.logique], active.hasPrefix("src/"), !validPaths.contains(active) {
             activeSubTabID[.logique] = openFiles.last ?? ""
         }

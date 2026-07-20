@@ -170,7 +170,7 @@ struct ExplorerPanelView: View {
                 }
             }
             .frame(width: 10)
-            Image(systemName: node.isDirectory ? "folder" : "doc.text")
+            Image(systemName: node.isDirectory ? "folder" : FileKind.of(path: node.id).iconName)
                 .font(.system(size: 11))
                 .foregroundStyle(node.isDirectory ? SNESTheme.textSecondary : SNESTheme.textDisabled)
             Text(node.name)
@@ -245,7 +245,7 @@ struct ExplorerPanelView: View {
                 }
             }
             .frame(width: 10)
-            Image(systemName: node.isDirectory ? "folder" : "doc.text")
+            Image(systemName: node.isDirectory ? "folder" : FileKind.of(path: node.id).iconName)
                 .font(.system(size: 11))
                 .foregroundStyle(SNESTheme.textSecondary)
             TextField("", text: $renameText)
@@ -276,7 +276,7 @@ struct ExplorerPanelView: View {
     private func pendingCreationRow(isFolder: Bool, depth: Int) -> some View {
         HStack(spacing: 6) {
             Spacer().frame(width: 10)
-            Image(systemName: isFolder ? "folder" : "doc.text")
+            Image(systemName: isFolder ? "folder" : FileKind.of(path: newItemName).iconName)
                 .font(.system(size: 11))
                 .foregroundStyle(SNESTheme.textDisabled)
             TextField("", text: $newItemName)

@@ -22,7 +22,7 @@ struct SubTabBar: View {
             ]
         case .logique:
             return state.openFiles.map { path in
-                (path, (path as NSString).lastPathComponent, "doc.text")
+                (path, (path as NSString).lastPathComponent, FileKind.of(path: path).iconName)
             }
         case .hardware:
             return [

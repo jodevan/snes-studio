@@ -63,9 +63,11 @@ struct CenterEditorView: View {
             if let screenID = UUID(uuidString: String(id.dropFirst("screen_".count))) {
                 LevelEditorContainerView(state: state, screenID: screenID)
             } else {
-                editorPlaceholder(id: id)
+                filePlaceholder(id: id) {
+                    Text("Editor placeholder — \(state.activeLevel.subtitle)")
+                }
             }
-        } else if id.hasSuffix(".asm") || id.hasSuffix(".inc") {
+        } else if state.openFileKinds[id] == .text {
             VStack(spacing: 0) {
                 CodeEditorView(state: state, fileID: id)
 
@@ -86,12 +88,16 @@ struct CenterEditorView: View {
                     SNESTheme.border.frame(height: 1)
                 }
             }
+        } else if state.openFileKinds[id] == .image {
+            ImagePreviewView(state: state, fileID: id)
         } else {
-            editorPlaceholder(id: id)
+            filePlaceholder(id: id) {
+                Text("Can't open binary files.")
+            }
         }
     }
 
-    private func editorPlaceholder(id: String) -> some View {
+    private func filePlaceholder(id: String, @ViewBuilder message: () -> some View) -> some View {
         VStack(spacing: 16) {
             Image(systemName: "doc")
                 .font(.system(size: 40))
@@ -101,7 +107,7 @@ struct CenterEditorView: View {
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(SNESTheme.textSecondary)
 
-            Text("Editor placeholder — \(state.activeLevel.subtitle)")
+            message()
                 .font(.system(size: 12))
                 .foregroundStyle(SNESTheme.textDisabled)
         }
