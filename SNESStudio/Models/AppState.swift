@@ -190,6 +190,7 @@ final class AppState {
         activeLevel = .logique
         if !openFiles.contains(relativePath) {
             openFiles.append(relativePath)
+            projectManager.currentProject?.openFiles = openFiles
         }
         if openFileKinds[relativePath] == nil {
             openFileKinds[relativePath] = FileKind.openKind(path: relativePath, url: fileURL(for: relativePath))
@@ -199,6 +200,7 @@ final class AppState {
 
     func closeFile(_ relativePath: String) {
         openFiles.removeAll { $0 == relativePath }
+        projectManager.currentProject?.openFiles = openFiles
         openFileKinds.removeValue(forKey: relativePath)
         if activeSubTabID[.logique] == relativePath {
             activeSubTabID[.logique] = openFiles.last ?? ""
@@ -417,6 +419,7 @@ final class AppState {
         openFileKinds = openFileKinds.reduce(into: [:]) { result, entry in
             result[remap(entry.key)] = entry.value
         }
+        projectManager.currentProject?.openFiles = openFiles
         if let active = activeSubTabID[.logique] {
             activeSubTabID[.logique] = remap(active)
         }
@@ -516,10 +519,19 @@ final class AppState {
         explorerInlineEdit = nil
         explorerClipboardPath = nil
 
-        // Open the first source file by default
+        // Reopen the files that were open when the project was last saved, falling
+        // back to the first source file for projects with no saved tab state.
         openFiles = []
         openFileKinds = [:]
-        if let first = sourceFiles.first {
+        let restoredFiles = (project.openFiles ?? []).filter { path in
+            guard let url = fileURL(for: path) else { return false }
+            return FileManager.default.fileExists(atPath: url.path)
+        }
+        if !restoredFiles.isEmpty {
+            for path in restoredFiles {
+                openFile(relativePath: path)
+            }
+        } else if let first = sourceFiles.first {
             openFile(relativePath: "src/\(first)")
         } else {
             activeSubTabID[.logique] = ""
@@ -604,6 +616,7 @@ final class AppState {
         let validPaths = Set(files.map { "src/\($0)" })
         openFiles.removeAll { $0.hasPrefix("src/") && !validPaths.contains($0) }
         openFileKinds = openFileKinds.filter { openFiles.contains($0.key) }
+        projectManager.currentProject?.openFiles = openFiles
         if let active = activeSubTabID[.logique], active.hasPrefix("src/"), !validPaths.contains(active) {
             activeSubTabID[.logique] = openFiles.last ?? ""
         }

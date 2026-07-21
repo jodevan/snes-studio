@@ -111,9 +111,7 @@ final class ProjectManager {
     // MARK: - Save Project
 
     func saveProject() throws {
-        guard var project = currentProject, let fileURL = project.projectFileURL else { return }
-        project.modifiedDate = Date()
-        currentProject = project
+        guard let project = currentProject, let fileURL = project.projectFileURL else { return }
 
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
@@ -127,7 +125,6 @@ final class ProjectManager {
     func updateCartridge(_ config: CartridgeConfig) throws {
         guard var project = currentProject, let projectPath = project.projectPath else { return }
         project.cartridge = config
-        project.modifiedDate = Date()
         currentProject = project
 
         // Regenerate linker config
@@ -146,7 +143,6 @@ final class ProjectManager {
     func updateBuildSettings(_ settings: BuildSettings) throws {
         guard var project = currentProject else { return }
         project.buildSettings = settings
-        project.modifiedDate = Date()
         currentProject = project
 
         try saveProject()

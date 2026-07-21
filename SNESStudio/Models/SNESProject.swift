@@ -61,15 +61,19 @@ struct SNESProject: Codable, Identifiable {
     var modifiedDate: Date = Date()
     var cartridge: CartridgeConfig
     var buildSettings: BuildSettings = BuildSettings()
-    var sourceFiles: [String] = []
     var assetFiles: [String] = []
+    /// Paths (relative to project root) open in the LOGIQUE tab bar when last saved.
+    /// Optional so older project files without this key still decode.
+    var openFiles: [String]? = nil
 
+    // Not serialized — populated from a disk scan of src/ on load (see ProjectManager.openProject)
+    var sourceFiles: [String] = []
     // Not serialized — set at load time
     var projectPath: URL? = nil
 
     enum CodingKeys: String, CodingKey {
         case id, name, author, version, createdDate, modifiedDate
-        case cartridge, buildSettings, sourceFiles, assetFiles
+        case cartridge, buildSettings, assetFiles, openFiles
     }
 
     // MARK: - Computed paths
