@@ -3,13 +3,15 @@ import Foundation
 // MARK: - Build Settings
 
 struct BuildSettings: Codable, Equatable {
+    /// Fallback used only when reading a project file saved before `buildCommand`
+    /// existed — new projects start with an empty command for the user to fill in.
     static let defaultBuildCommand = "asar {entry_file} {rom_name}"
 
     /// Final ROM filename, including extension (e.g. "game.sfc").
-    var romName: String = "game.sfc"
+    var romName: String = ""
     /// Command run to produce the ROM. Supports {entry_file}, {object_file},
     /// and {rom_name} placeholders, substituted with absolute paths at build time.
-    var buildCommand: String = defaultBuildCommand
+    var buildCommand: String = ""
     var fixChecksum: Bool = true
     /// Source file passed to the build command as the build entry point.
     /// When nil, falls back to the alphabetically first source file.

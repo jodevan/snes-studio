@@ -220,6 +220,11 @@ struct ExplorerPanelView: View {
     private func contextMenuItems(for node: FileNode) -> some View {
         let parent = node.isDirectory ? node.id : (node.id as NSString).deletingLastPathComponent
 
+        if !node.isDirectory, (node.id as NSString).deletingLastPathComponent == "src",
+           (node.id as NSString).pathExtension.lowercased() == "asm" {
+            Button("Run This File") { Task { await state.runFile(atPath: node.id) } }
+            Divider()
+        }
         Button("New File...") { state.beginCreateItem(isFolder: false, in: parent) }
         Button("New Folder...") { state.beginCreateItem(isFolder: true, in: parent) }
         Divider()

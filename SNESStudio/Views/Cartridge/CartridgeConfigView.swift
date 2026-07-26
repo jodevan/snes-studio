@@ -5,6 +5,7 @@ struct CartridgeConfigView: View {
 
     @State private var config: CartridgeConfig
     @State private var errorMessage: String?
+    @State private var showCommandPopover = false
 
     init(state: AppState) {
         self.state = state
@@ -12,6 +13,14 @@ struct CartridgeConfigView: View {
     }
 
     var body: some View {
+        ScrollViewReader { scrollProxy in
+            scrollableContent
+                .onAppear { presentBuildCommandPromptIfNeeded(scrollProxy: scrollProxy) }
+                .onChange(of: state.showBuildCommandPrompt) { presentBuildCommandPromptIfNeeded(scrollProxy: scrollProxy) }
+        }
+    }
+
+    private var scrollableContent: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 // Title
@@ -62,6 +71,26 @@ struct CartridgeConfigView: View {
             .padding(20)
         }
         .background(SNESTheme.bgEditor)
+    }
+
+    /// `state.showBuildCommandPrompt` can already be true by the time this view is
+    /// created (it's set in the same call that switches to this tab, and `.id(activeID)`
+    /// in CenterEditorView gives this view a fresh identity on navigation) — a `.popover`
+    /// bound directly to it wouldn't present, since popovers only trigger on a
+    /// false-to-true transition while already mounted. Scrolling to the field, then
+    /// mirroring the state into a local flag once that settles, gives the popover a
+    /// real transition to react to and a stable anchor to attach to.
+    private func presentBuildCommandPromptIfNeeded(scrollProxy: ScrollViewProxy) {
+        guard state.showBuildCommandPrompt else { return }
+        state.showBuildCommandPrompt = false
+        DispatchQueue.main.async {
+            withAnimation {
+                scrollProxy.scrollTo("buildCommandField", anchor: .center)
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                showCommandPopover = true
+            }
+        }
     }
 
     // MARK: - Profile Grid
@@ -216,7 +245,14 @@ struct CartridgeConfigView: View {
                         TextField("asar {entry_file} {rom_name}", text: buildCommandBinding)
                             .textFieldStyle(.roundedBorder)
                             .font(.system(size: 12, design: .monospaced))
+                            .popover(isPresented: $showCommandPopover, arrowEdge: .top) {
+                                Text("Set a build command and ROM name before you can build or run.")
+                                    .font(.system(size: 12))
+                                    .padding(10)
+                                    .frame(width: 220)
+                            }
                     }
+                    .id("buildCommandField")
 
                     Text("The command used to build the ROM, run in a shell so &&, ;, and | work as expected. Placeholders: {entry_file}, {object_file}, {rom_name}, {src_folder}, {build_folder} — substituted with absolute paths at build time.")
                         .font(.system(size: 11))

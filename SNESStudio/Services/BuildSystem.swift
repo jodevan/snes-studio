@@ -27,7 +27,7 @@ final class BuildSystem {
     // MARK: - Build
 
     @MainActor
-    func build(project: SNESProject, console: AppState) async {
+    func build(project: SNESProject, console: AppState, entryFile: String? = nil) async {
         guard !isBuilding else { return }
         guard let projectPath = project.projectPath else {
             console.appendConsole(String(localized: "Project path not defined"), type: .error)
@@ -50,11 +50,12 @@ final class BuildSystem {
         let buildDir = projectPath.appendingPathComponent("build")
         let outputFile = buildDir.appendingPathComponent(project.buildSettings.romName)
 
-        // Build entry point. Falls back to the alphabetically first source file
-        // if unset or if the configured file no longer exists in the project.
+        // Build entry point. `entryFile` (from "Run this file" in the Explorer) takes
+        // priority; otherwise falls back to the configured main source file, and then
+        // the alphabetically first source file if unset or no longer in the project.
         let configuredMainFile = project.buildSettings.mainSourceFile
             .flatMap { project.sourceFiles.contains($0) ? $0 : nil }
-        guard let mainSourceFile = configuredMainFile ?? project.sourceFiles.first else {
+        guard let mainSourceFile = entryFile ?? configuredMainFile ?? project.sourceFiles.first else {
             console.appendConsole(String(localized: "No source files found in project"), type: .error)
             isBuilding = false
             return

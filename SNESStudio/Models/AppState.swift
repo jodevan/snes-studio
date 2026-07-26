@@ -20,6 +20,9 @@ final class AppState {
         .hardware: "cartouche",
     ]
     var sourceFiles: [String] = []
+    /// Set when a build/run action is blocked by a missing build command, so the
+    /// Cartridge tab can show a prompt pointing at the Command field.
+    var showBuildCommandPrompt: Bool = false
 
     // MARK: - Tabs (kept for screen tab tracking)
     var tabManager = TabManager()
@@ -660,21 +663,42 @@ final class AppState {
         }
     }
 
-    func buildProject() async {
+    func buildProject(entryFileOverride: String? = nil) async {
         guard let project = projectManager.currentProject else {
             appendConsole(String(localized: "No project open"), type: .error)
             return
         }
-        await buildSystem.build(project: project, console: self)
+        guard !project.buildSettings.buildCommand.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+              !project.buildSettings.romName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            promptForBuildCommand()
+            return
+        }
+        await buildSystem.build(project: project, console: self, entryFile: entryFileOverride)
         refreshExplorer()
     }
 
-    func runProject() async {
-        await buildProject()
+    func runProject(entryFileOverride: String? = nil) async {
+        await buildProject(entryFileOverride: entryFileOverride)
         guard let result = buildSystem.lastResult, result.success, let romURL = result.romURL else {
             return
         }
         launchEmulator(romURL: romURL)
+    }
+
+    /// Runs a single .asm file as the build entry point, overriding the project's
+    /// configured main source file for this run only. `relativePath` is a
+    /// project-root-relative path (e.g. "src/main.asm").
+    func runFile(atPath relativePath: String) async {
+        await runProject(entryFileOverride: (relativePath as NSString).lastPathComponent)
+    }
+
+    /// Switches to the Cartridge tab and flags the Build section so the user can
+    /// fill in the command/ROM name before building/running is possible.
+    private func promptForBuildCommand() {
+        appendConsole(String(localized: "Build command or ROM name not set — configure them in the Cartridge tab"), type: .error)
+        setLevel(.hardware)
+        selectSubTab("cartouche")
+        showBuildCommandPrompt = true
     }
 
     private func launchEmulator(romURL: URL) {
